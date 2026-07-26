@@ -47,10 +47,13 @@ El proyecto **Control Tensión Arterial** dispone de tres aplicaciones complemen
 Las compilaciones oficiales del APK y el despliegue de la PWA se generan automáticamente mediante **GitHub Actions**.
 
 ### 1. 📱 Instalación Novedosa con Obtainium (Recomendado en Android):
-La app es 100% compatible con **[Obtainium](https://github.com/ImranR98/Obtainium)**:
-1. Abre Obtainium en tu teléfono Android.
-2. Añade la URL del repositorio: `https://github.com/el-rocho/cta-elrocho-client-app`.
-3. Obtainium instalará la app y te notificará automáticamente de las futuras actualizaciones.
+La app es 100% compatible con **[Obtainium](https://github.com/ImranR98/Obtainium)**. Escanea este código QR desde Obtainium en tu teléfono Android o añade manualmente la URL del repositorio (`https://github.com/el-rocho/cta-elrocho-client-app`):
+
+<p align="center">
+  <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=https://github.com/el-rocho/cta-elrocho-client-app" alt="Código QR para Obtainium - cta-elrocho-client-app" width="160" height="160" />
+  <br />
+  <sub><b>Escanea desde Obtainium para instalar y recibir actualizaciones</b></sub>
+</p>
 
 ### 2. 📥 Descarga Manual de APK (GitHub Releases):
 1. Accede a **[Releases del Repositorio](https://github.com/el-rocho/cta-elrocho-client-app/releases)**.
