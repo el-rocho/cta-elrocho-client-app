@@ -1,0 +1,239 @@
+import type { AuthStatusResponse, AuthUser } from '../types/bloodPressure';
+import { getSavedServerUrl } from './serverConfigService';
+
+function getApiBase(): string {
+  const serverUrl = getSavedServerUrl();
+  return serverUrl ? `${serverUrl}/api/auth` : '/api/auth';
+}
+
+function getAuthHeaders(extraHeaders: Record<string, string> = {}): Record<string, string> {
+  const headers: Record<string, string> = { ...extraHeaders };
+  const token = localStorage.getItem('cta_session_token');
+  if (token) {
+    headers['x-session-token'] = token;
+  }
+  return headers;
+}
+
+function saveToken(token?: string) {
+  if (token) {
+    localStorage.setItem('cta_session_token', token);
+  }
+}
+
+export async function getAuthStatus(): Promise<AuthStatusResponse> {
+  try {
+    const apiBase = getApiBase();
+    const res = await fetch(`${apiBase}/status`, {
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    });
+    if (!res.ok) throw new Error('Error al consultar estado de autenticación');
+    return await res.json();
+  } catch (err) {
+    console.error('Error al obtener estado de auth:', err);
+    return { hasAdmin: false, userCount: 0, user: null };
+  }
+}
+
+export async function setupAdmin(payload: { username: string; name: string; password: string }): Promise<{ success: boolean; user?: AuthUser; error?: string }> {
+  try {
+    const apiBase = getApiBase();
+    const res = await fetch(`${apiBase}/setup-admin`, {
+      method: 'POST',
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) return { success: false, error: data.error || 'Error al crear administrador inicial' };
+    saveToken(data.token);
+    return { success: true, user: data.user };
+  } catch (err) {
+    return { success: false, error: 'Error de conexión con el servidor' };
+  }
+}
+
+export async function login(payload: { username: string; password: string }): Promise<{
+  success: boolean;
+  requires2FA?: boolean;
+  tempToken?: string;
+  user?: AuthUser;
+  error?: string;
+}> {
+  try {
+    const apiBase = getApiBase();
+    const res = await fetch(`${apiBase}/login`, {
+      method: 'POST',
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) return { success: false, error: data.error || 'Error al iniciar sesión' };
+
+    if (data.requires2FA) {
+      return { success: true, requires2FA: true, tempToken: data.tempToken };
+    }
+
+    saveToken(data.token);
+    return { success: true, user: data.user };
+  } catch (err) {
+    return { success: false, error: 'Error de conexión con el servidor' };
+  }
+}
+
+export async function verifyLoginTotp(payload: { tempToken: string; code: string }): Promise<{
+  success: boolean;
+  user?: AuthUser;
+  error?: string;
+}> {
+  try {
+    const apiBase = getApiBase();
+    const res = await fetch(`${apiBase}/login/totp`, {
+      method: 'POST',
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) return { success: false, error: data.error || 'Código 2FA incorrecto' };
+    saveToken(data.token);
+    return { success: true, user: data.user };
+  } catch (err) {
+    return { success: false, error: 'Error de conexión con el servidor' };
+  }
+}
+
+export async function logout(): Promise<void> {
+  try {
+    const apiBase = getApiBase();
+    localStorage.removeItem('cta_session_token');
+    await fetch(`${apiBase}/logout`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    });
+  } catch (err) {
+    console.error('Error al cerrar sesión:', err);
+  }
+}
+
+// 2FA Setup & Verification
+export async function setupTotp(): Promise<{ secret?: string; qrCodeDataUrl?: string; error?: string }> {
+  try {
+    const apiBase = getApiBase();
+    const res = await fetch(`${apiBase}/totp/setup`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      return { error: data.error || `Error (${res.status}): ${res.statusText}` };
+    }
+    return data;
+  } catch (err: any) {
+    console.error('Error al solicitar setup 2FA:', err);
+    return { error: err.message || 'Error de conexión con el servidor' };
+  }
+}
+
+export async function verifyAndEnableTotp(code: string): Promise<{ success: boolean; recoveryCodes?: string[]; error?: string }> {
+  try {
+    const apiBase = getApiBase();
+    const res = await fetch(`${apiBase}/totp/verify`, {
+      method: 'POST',
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+      credentials: 'include',
+      body: JSON.stringify({ code }),
+    });
+    const data = await res.json();
+    if (!res.ok) return { success: false, error: data.error || 'Error al verificar 2FA' };
+    return { success: true, recoveryCodes: data.recoveryCodes };
+  } catch (err) {
+    return { success: false, error: 'Error de conexión' };
+  }
+}
+
+export async function disableTotp(): Promise<boolean> {
+  try {
+    const apiBase = getApiBase();
+    const res = await fetch(`${apiBase}/totp/disable`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    });
+    return res.ok;
+  } catch (err) {
+    return false;
+  }
+}
+
+// Administración de usuarios (Solo Admin)
+function getUsersApiBase(): string {
+  const serverUrl = getSavedServerUrl();
+  return serverUrl ? `${serverUrl}/api/users` : '/api/users';
+}
+
+export async function listUsers(): Promise<AuthUser[]> {
+  try {
+    const usersApi = getUsersApiBase();
+    const res = await fetch(usersApi, {
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    });
+    if (!res.ok) return [];
+    return await res.json();
+  } catch (err) {
+    return [];
+  }
+}
+
+export async function createUser(payload: { username: string; name: string; password: string; role: 'admin' | 'user' }): Promise<{ success: boolean; user?: AuthUser; error?: string }> {
+  try {
+    const usersApi = getUsersApiBase();
+    const res = await fetch(usersApi, {
+      method: 'POST',
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) return { success: false, error: data.error || 'Error al crear usuario' };
+    return { success: true, user: data };
+  } catch (err) {
+    return { success: false, error: 'Error de conexión' };
+  }
+}
+
+export async function deleteUser(id: string): Promise<boolean> {
+  try {
+    const usersApi = getUsersApiBase();
+    const res = await fetch(`${usersApi}/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    });
+    return res.ok;
+  } catch (err) {
+    return false;
+  }
+}
+
+export async function resetUserPassword(id: string, newPassword: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const usersApi = getUsersApiBase();
+    const res = await fetch(`${usersApi}/${id}/reset-password`, {
+      method: 'POST',
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+      credentials: 'include',
+      body: JSON.stringify({ newPassword }),
+    });
+    const data = await res.json();
+    if (!res.ok) return { success: false, error: data.error || 'Error al restablecer clave' };
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: 'Error de conexión' };
+  }
+}
