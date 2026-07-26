@@ -123,6 +123,22 @@ export async function clearAllReadingsOnServer(): Promise<boolean> {
   }
 }
 
+export async function resetDemoDataOnServer(): Promise<BloodPressureReading[]> {
+  try {
+    const apiBase = getApiBase();
+    const res = await fetch(`${apiBase}/readings/reset-demo`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    });
+    if (!res.ok) return [];
+    return await res.json();
+  } catch (error) {
+    console.error('Error al restaurar mediciones de demostración en el servidor:', error);
+    return [];
+  }
+}
+
 export async function importReadingsToServer(imported: Omit<BloodPressureReading, 'id'>[]): Promise<{ addedCount: number; readings: BloodPressureReading[] }> {
   try {
     const apiBase = getApiBase();
