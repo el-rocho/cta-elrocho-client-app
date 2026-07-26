@@ -1,4 +1,10 @@
 import type { AuthStatusResponse, AuthUser, PatientSex } from '../types/bloodPressure';
+import { getSavedServerUrl } from './serverConfigService';
+
+function getApiBase(): string {
+  const serverUrl = getSavedServerUrl();
+  return serverUrl ? `${serverUrl}/api` : '/api';
+}
 
 function getAuthHeaders(extraHeaders: Record<string, string> = {}): Record<string, string> {
   const headers: Record<string, string> = { ...extraHeaders };
@@ -17,7 +23,8 @@ function saveToken(token?: string) {
 
 export async function getAuthStatus(): Promise<AuthStatusResponse> {
   try {
-    const res = await fetch('/api/auth/status', {
+    const apiBase = getApiBase();
+    const res = await fetch(`${apiBase}/auth/status`, {
       headers: getAuthHeaders(),
       credentials: 'include',
     });
@@ -37,7 +44,8 @@ export async function setupAdmin(payload: {
   birthDate?: string;
 }): Promise<{ success: boolean; user?: AuthUser; error?: string }> {
   try {
-    const res = await fetch('/api/auth/setup-admin', {
+    const apiBase = getApiBase();
+    const res = await fetch(`${apiBase}/auth/setup-admin`, {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       credentials: 'include',
@@ -60,7 +68,8 @@ export async function login(payload: { username: string; password: string }): Pr
   error?: string;
 }> {
   try {
-    const res = await fetch('/api/auth/login', {
+    const apiBase = getApiBase();
+    const res = await fetch(`${apiBase}/auth/login`, {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       credentials: 'include',
@@ -86,7 +95,8 @@ export async function verifyLoginTotp(payload: { tempToken: string; code: string
   error?: string;
 }> {
   try {
-    const res = await fetch('/api/auth/login/totp', {
+    const apiBase = getApiBase();
+    const res = await fetch(`${apiBase}/auth/login/totp`, {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       credentials: 'include',
@@ -104,7 +114,8 @@ export async function verifyLoginTotp(payload: { tempToken: string; code: string
 export async function logout(): Promise<void> {
   try {
     localStorage.removeItem('cta_session_token');
-    await fetch('/api/auth/logout', {
+    const apiBase = getApiBase();
+    await fetch(`${apiBase}/auth/logout`, {
       method: 'POST',
       headers: getAuthHeaders(),
       credentials: 'include',
@@ -117,7 +128,8 @@ export async function logout(): Promise<void> {
 // 2FA Setup & Verification
 export async function setupTotp(): Promise<{ secret?: string; qrCodeDataUrl?: string; error?: string }> {
   try {
-    const res = await fetch('/api/auth/totp/setup', {
+    const apiBase = getApiBase();
+    const res = await fetch(`${apiBase}/auth/totp/setup`, {
       method: 'POST',
       headers: getAuthHeaders(),
       credentials: 'include',
@@ -135,7 +147,8 @@ export async function setupTotp(): Promise<{ secret?: string; qrCodeDataUrl?: st
 
 export async function verifyAndEnableTotp(code: string): Promise<{ success: boolean; recoveryCodes?: string[]; error?: string }> {
   try {
-    const res = await fetch('/api/auth/totp/verify', {
+    const apiBase = getApiBase();
+    const res = await fetch(`${apiBase}/auth/totp/verify`, {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       credentials: 'include',
@@ -151,7 +164,8 @@ export async function verifyAndEnableTotp(code: string): Promise<{ success: bool
 
 export async function disableTotp(): Promise<boolean> {
   try {
-    const res = await fetch('/api/auth/totp/disable', {
+    const apiBase = getApiBase();
+    const res = await fetch(`${apiBase}/auth/totp/disable`, {
       method: 'POST',
       headers: getAuthHeaders(),
       credentials: 'include',
@@ -165,7 +179,8 @@ export async function disableTotp(): Promise<boolean> {
 // Administración de usuarios (Solo Admin)
 export async function listUsers(): Promise<AuthUser[]> {
   try {
-    const res = await fetch('/api/users', {
+    const apiBase = getApiBase();
+    const res = await fetch(`${apiBase}/users`, {
       headers: getAuthHeaders(),
       credentials: 'include',
     });
@@ -185,7 +200,8 @@ export async function createUser(payload: {
   birthDate?: string;
 }): Promise<{ success: boolean; user?: AuthUser; error?: string }> {
   try {
-    const res = await fetch('/api/users', {
+    const apiBase = getApiBase();
+    const res = await fetch(`${apiBase}/users`, {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       credentials: 'include',
@@ -201,7 +217,8 @@ export async function createUser(payload: {
 
 export async function deleteUser(id: string): Promise<boolean> {
   try {
-    const res = await fetch(`/api/users/${id}`, {
+    const apiBase = getApiBase();
+    const res = await fetch(`${apiBase}/users/${id}`, {
       method: 'DELETE',
       headers: getAuthHeaders(),
       credentials: 'include',
@@ -214,7 +231,8 @@ export async function deleteUser(id: string): Promise<boolean> {
 
 export async function resetUserPassword(id: string, newPassword: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const res = await fetch(`/api/users/${id}/reset-password`, {
+    const apiBase = getApiBase();
+    const res = await fetch(`${apiBase}/users/${id}/reset-password`, {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       credentials: 'include',

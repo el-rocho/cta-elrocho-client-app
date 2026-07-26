@@ -54,7 +54,7 @@ La app es 100% compatible con **[Obtainium](https://github.com/ImranR98/Obtainiu
 
 ### 2. 📥 Descarga Manual de APK (GitHub Releases):
 1. Accede a **[Releases del Repositorio](https://github.com/el-rocho/cta-elrocho-client-app/releases)**.
-2. Descarga el archivo `control-tension-server.apk`.
+2. Descarga el archivo `control-tension-client-app.apk`.
 3. Instala el APK en tu dispositivo Android.
 
 ### 3. 🌐 Uso como PWA (Navegador Web / Pantalla de Inicio):

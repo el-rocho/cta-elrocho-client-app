@@ -1,6 +1,6 @@
 {
   "appId": "es.elrocho.tensionarterial.cliente",
-  "appName": "Control Tensión Server",
+  "appName": "Control Tensión Arterial",
   "webDir": "dist",
   "bundledWebRuntime": false
 }

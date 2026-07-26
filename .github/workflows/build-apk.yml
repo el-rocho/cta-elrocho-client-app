@@ -69,7 +69,7 @@ jobs:
           IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
           MAJOR=${MAJOR:-1}
           MINOR=${MINOR:-5}
-          PATCH=${PATCH:-3}
+          PATCH=${PATCH:-4}
           VERSION_CODE=$((MAJOR * 10000 + MINOR * 100 + PATCH))
           echo "Compilando APK versión $VERSION (versionCode: $VERSION_CODE)..."
           cd android
@@ -77,13 +77,13 @@ jobs:
 
       - name: Preparar APK con nombre amigable
         run: |
-          cp android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/control-tension-server.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/control-tension-client-app.apk
 
       - name: Subir APK como Artefacto de Workflow
         uses: actions/upload-artifact@v4
         with:
-          name: control-tension-server-apk
-          path: android/app/build/outputs/apk/debug/control-tension-server.apk
+          name: control-tension-client-app-apk
+          path: android/app/build/outputs/apk/debug/control-tension-client-app.apk
           retention-days: 14
 
       - name: Publicar APK en GitHub Releases (GitHub CLI)
@@ -92,9 +92,9 @@ jobs:
           if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
             TAG="${{ github.ref_name }}"
           else
-            TAG="v1.5.3"
+            TAG="v1.5.4"
           fi
           echo "Publicando release $TAG con GitHub CLI..."
-          gh release create "$TAG" android/app/build/outputs/apk/debug/control-tension-server.apk --title "$TAG" --notes "Release $TAG - Control Tensión Server APK (Cliente Autoalojado)" --latest || gh release upload "$TAG" android/app/build/outputs/apk/debug/control-tension-server.apk --clobber
+          gh release create "$TAG" android/app/build/outputs/apk/debug/control-tension-client-app.apk --title "$TAG" --notes "Release $TAG - Control Tensión Client App APK (Cliente Autoalojado)" --latest || gh release upload "$TAG" android/app/build/outputs/apk/debug/control-tension-client-app.apk --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
