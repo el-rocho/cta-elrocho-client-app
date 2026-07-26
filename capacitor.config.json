@@ -1,6 +1,6 @@
 {
   "appId": "es.elrocho.tensionarterial.cliente",
-  "appName": "Control Tensión Arterial",
+  "appName": "CTA client",
   "webDir": "dist",
   "bundledWebRuntime": false
 }
