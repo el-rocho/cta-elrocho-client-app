@@ -24,9 +24,9 @@ El proyecto **Control Tensión Arterial** dispone de tres aplicaciones complemen
 
 | Aplicación | Repositorio GitHub | Descripción y Uso |
 | :--- | :--- | :--- |
-| 📱 **Versión Individual Móvil (Offline)** | [**cta-elrocho**](https://github.com/el-rocho/cta-elrocho) | App nativa 100% offline para uso personal en un único teléfono. Sin cuentas, sin servidor y sin conexión a red. |
-| 🐳 **Servidor Autoalojado (Docker)** | [**cta-elrocho-selfhosted**](https://github.com/el-rocho/cta-elrocho-selfhosted) | Servidor para instalar en tu NAS doméstico o Docker. Multiusuario (~10 perfiles), base de datos SQLite y 2FA TOTP. |
-| 🚀 **Cliente Servidor (Android & PWA)** | **[cta-elrocho-client-app](https://github.com/el-rocho/cta-elrocho-client-app)** *(Este repo)* | App cliente para conectar al servidor autoalojado introduciendo su IP/URL de red local (`http://192.168.1.x:3000`). |
+| 📱 **Versión Individual Móvil (Offline)** | [**cta-elrocho**](https://github.com/el-rocho/cta-elrocho) | Ideal para uso personal en un único teléfono. Funciona **100% offline**, sin cuentas, sin servidor y guardando todos los datos en el almacenamiento interno privado del dispositivo. |
+| 🐳 **Servidor Autoalojado (Docker)** | [**cta-elrocho-selfhosted**](https://github.com/el-rocho/cta-elrocho-selfhosted) | Ideal si deseas desplegar la app en tu servidor privado o NAS para gestionar **varios perfiles familiares (~10 usuarios)** con base de datos SQLite y **2FA TOTP**. |
+| 🚀 **Cliente Servidor (Android & PWA)** | **[cta-elrocho-client-app](https://github.com/el-rocho/cta-elrocho-client-app)** *(Este repo)* | App cliente para conectar al servidor autoalojado introduciendo la IP (`http://192.168.1.x:3000`), con interfaz nativa Android y exportación PDF/CSV. |
 
 ---
 
