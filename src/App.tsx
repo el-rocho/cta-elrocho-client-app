@@ -257,22 +257,33 @@ export function App() {
     );
   }
 
+  // Si la pantalla de configuración del servidor está activa, renderizarla de forma individual aislada
+  if (isServerModalOpen) {
+    return (
+      <LanguageProvider
+        language={settings.language}
+        onLanguageChange={(lang) => handleUpdateSettings({ ...settings, language: lang })}
+      >
+        <div style={{ display: 'flex', minHeight: '100vh', justifyContent: 'center', alignItems: 'center', background: 'var(--bg-app)', color: 'var(--text-primary)', padding: '20px' }}>
+          <ServerConfigModal
+            isOpen={true}
+            canDismiss={Boolean(serverUrl)}
+            onClose={() => setIsServerModalOpen(false)}
+            onConnected={handleServerConnected}
+          />
+        </div>
+      </LanguageProvider>
+    );
+  }
+
   return (
     <LanguageProvider
       language={settings.language}
       onLanguageChange={(lang) => handleUpdateSettings({ ...settings, language: lang })}
     >
       <div className="app-container">
-        {/* Modal de Configuración de Servidor IP */}
-        <ServerConfigModal
-          isOpen={isServerModalOpen}
-          canDismiss={Boolean(serverUrl)}
-          onClose={() => setIsServerModalOpen(false)}
-          onConnected={handleServerConnected}
-        />
-
-        {/* Modal de Login / Registro Admin */}
-        {!isServerModalOpen && !currentUser && (
+        {/* Modal de Login / Registro Admin si no hay usuario autenticado */}
+        {!currentUser && (
           <LoginModal
             hasAdmin={hasAdmin}
             onLoginSuccess={handleLoginSuccess}

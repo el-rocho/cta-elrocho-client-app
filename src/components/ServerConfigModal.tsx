@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Server, CheckCircle2, AlertTriangle, RefreshCw, X, Globe, ShieldCheck } from 'lucide-react';
+import { Server, CheckCircle2, AlertTriangle, RefreshCw, X, Globe } from 'lucide-react';
 import { testServerConnection, saveServerUrl, getSavedServerUrl } from '../services/serverConfigService';
 
 interface ServerConfigModalProps {
@@ -38,24 +38,19 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
 
     if (res.success && res.url) {
       const savedUrl = saveServerUrl(res.url);
-      setSuccessMsg(`¡Conexión establecida con éxito con el servidor!`);
+      setSuccessMsg('¡Conexión establecida con éxito con el servidor!');
       setTimeout(() => {
         onConnected(savedUrl);
         if (onClose) onClose();
-      }, 900);
+      }, 700);
     } else {
       setErrorMsg(res.error || 'Error al conectar con el servidor.');
     }
   };
 
-  const handleUseExample = (ipExample: string) => {
-    setServerIp(ipExample);
-    setErrorMsg(null);
-  };
-
   return (
     <div className="modal-backdrop" style={{ zIndex: 1100 }}>
-      <div className="modal-content" style={{ maxWidth: '520px', padding: '28px' }}>
+      <div className="modal-content" style={{ maxWidth: '480px', padding: '28px', borderRadius: '16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div
@@ -75,8 +70,8 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
             </div>
             <div>
               <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700 }}>Servidor Autoalojado</h2>
-              <p style={{ margin: 0, fontSize: '0.85rem', opacity: 0.7 }}>
-                Conexión a tu servidor Docker / NAS
+              <p style={{ margin: 0, fontSize: '0.88rem', opacity: 0.75 }}>
+                Conexión al servidor
               </p>
             </div>
           </div>
@@ -85,7 +80,7 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
               type="button"
               className="icon-button"
               onClick={onClose}
-              title="Cerrar"
+              title="Cancelar"
             >
               <X size={20} />
             </button>
@@ -101,7 +96,7 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
               <input
                 type="text"
                 className="form-input"
-                placeholder="Ej: http://192.168.1.50:3000 o https://mi-servidor.local"
+                placeholder="http://192.168.1.50:3000"
                 value={serverIp}
                 onChange={(e) => {
                   setServerIp(e.target.value);
@@ -122,32 +117,9 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
                 }}
               />
             </div>
-            <span className="field-help" style={{ marginTop: '6px', fontSize: '0.8rem', display: 'block', opacity: 0.75 }}>
-              Introduce la dirección donde instalaste <code>cta-elrocho-selfhosted</code> en tu red local.
+            <span className="field-help" style={{ marginTop: '8px', fontSize: '0.83rem', display: 'block', opacity: 0.8 }}>
+              Introduce la dirección donde instalaste cta-elrocho-selfhosted
             </span>
-          </div>
-
-          {/* Ejemplos rápidos */}
-          <div style={{ marginBottom: '20px', background: 'var(--bg-secondary, #f8fafc)', padding: '12px 14px', borderRadius: '10px', fontSize: '0.82rem' }}>
-            <div style={{ fontWeight: 600, marginBottom: '6px', opacity: 0.8 }}>Formatos habituales:</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              <button
-                type="button"
-                className="chip-btn"
-                style={{ fontSize: '0.78rem', padding: '4px 8px' }}
-                onClick={() => handleUseExample('http://192.168.1.100:3000')}
-              >
-                http://192.168.1.100:3000
-              </button>
-              <button
-                type="button"
-                className="chip-btn"
-                style={{ fontSize: '0.78rem', padding: '4px 8px' }}
-                onClick={() => handleUseExample('http://localhost:3000')}
-              >
-                http://localhost:3000
-              </button>
-            </div>
           </div>
 
           {errorMsg && (
@@ -190,13 +162,14 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
             </div>
           )}
 
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '10px' }}>
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '24px' }}>
             {canDismiss && onClose && (
               <button
                 type="button"
                 className="btn btn-secondary"
                 onClick={onClose}
                 disabled={loading}
+                style={{ padding: '10px 18px' }}
               >
                 Cancelar
               </button>
@@ -205,7 +178,7 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
               type="submit"
               className="btn btn-primary"
               disabled={loading || !serverIp.trim()}
-              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 24px' }}
             >
               {loading ? (
                 <>
@@ -213,10 +186,7 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
                   Conectando...
                 </>
               ) : (
-                <>
-                  <ShieldCheck size={18} />
-                  Probar y Conectar
-                </>
+                'Conectar'
               )}
             </button>
           </div>
