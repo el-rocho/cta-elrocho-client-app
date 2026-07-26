@@ -1,10 +1,4 @@
-import type { AuthStatusResponse, AuthUser } from '../types/bloodPressure';
-import { getSavedServerUrl } from './serverConfigService';
-
-function getApiBase(): string {
-  const serverUrl = getSavedServerUrl();
-  return serverUrl ? `${serverUrl}/api/auth` : '/api/auth';
-}
+import type { AuthStatusResponse, AuthUser, PatientSex } from '../types/bloodPressure';
 
 function getAuthHeaders(extraHeaders: Record<string, string> = {}): Record<string, string> {
   const headers: Record<string, string> = { ...extraHeaders };
@@ -23,8 +17,7 @@ function saveToken(token?: string) {
 
 export async function getAuthStatus(): Promise<AuthStatusResponse> {
   try {
-    const apiBase = getApiBase();
-    const res = await fetch(`${apiBase}/status`, {
+    const res = await fetch('/api/auth/status', {
       headers: getAuthHeaders(),
       credentials: 'include',
     });
@@ -36,10 +29,15 @@ export async function getAuthStatus(): Promise<AuthStatusResponse> {
   }
 }
 
-export async function setupAdmin(payload: { username: string; name: string; password: string }): Promise<{ success: boolean; user?: AuthUser; error?: string }> {
+export async function setupAdmin(payload: {
+  username: string;
+  name: string;
+  password: string;
+  sex?: PatientSex;
+  birthDate?: string;
+}): Promise<{ success: boolean; user?: AuthUser; error?: string }> {
   try {
-    const apiBase = getApiBase();
-    const res = await fetch(`${apiBase}/setup-admin`, {
+    const res = await fetch('/api/auth/setup-admin', {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       credentials: 'include',
@@ -62,8 +60,7 @@ export async function login(payload: { username: string; password: string }): Pr
   error?: string;
 }> {
   try {
-    const apiBase = getApiBase();
-    const res = await fetch(`${apiBase}/login`, {
+    const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       credentials: 'include',
@@ -89,8 +86,7 @@ export async function verifyLoginTotp(payload: { tempToken: string; code: string
   error?: string;
 }> {
   try {
-    const apiBase = getApiBase();
-    const res = await fetch(`${apiBase}/login/totp`, {
+    const res = await fetch('/api/auth/login/totp', {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       credentials: 'include',
@@ -107,9 +103,8 @@ export async function verifyLoginTotp(payload: { tempToken: string; code: string
 
 export async function logout(): Promise<void> {
   try {
-    const apiBase = getApiBase();
     localStorage.removeItem('cta_session_token');
-    await fetch(`${apiBase}/logout`, {
+    await fetch('/api/auth/logout', {
       method: 'POST',
       headers: getAuthHeaders(),
       credentials: 'include',
@@ -122,8 +117,7 @@ export async function logout(): Promise<void> {
 // 2FA Setup & Verification
 export async function setupTotp(): Promise<{ secret?: string; qrCodeDataUrl?: string; error?: string }> {
   try {
-    const apiBase = getApiBase();
-    const res = await fetch(`${apiBase}/totp/setup`, {
+    const res = await fetch('/api/auth/totp/setup', {
       method: 'POST',
       headers: getAuthHeaders(),
       credentials: 'include',
@@ -141,8 +135,7 @@ export async function setupTotp(): Promise<{ secret?: string; qrCodeDataUrl?: st
 
 export async function verifyAndEnableTotp(code: string): Promise<{ success: boolean; recoveryCodes?: string[]; error?: string }> {
   try {
-    const apiBase = getApiBase();
-    const res = await fetch(`${apiBase}/totp/verify`, {
+    const res = await fetch('/api/auth/totp/verify', {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       credentials: 'include',
@@ -158,8 +151,7 @@ export async function verifyAndEnableTotp(code: string): Promise<{ success: bool
 
 export async function disableTotp(): Promise<boolean> {
   try {
-    const apiBase = getApiBase();
-    const res = await fetch(`${apiBase}/totp/disable`, {
+    const res = await fetch('/api/auth/totp/disable', {
       method: 'POST',
       headers: getAuthHeaders(),
       credentials: 'include',
@@ -171,15 +163,9 @@ export async function disableTotp(): Promise<boolean> {
 }
 
 // Administración de usuarios (Solo Admin)
-function getUsersApiBase(): string {
-  const serverUrl = getSavedServerUrl();
-  return serverUrl ? `${serverUrl}/api/users` : '/api/users';
-}
-
 export async function listUsers(): Promise<AuthUser[]> {
   try {
-    const usersApi = getUsersApiBase();
-    const res = await fetch(usersApi, {
+    const res = await fetch('/api/users', {
       headers: getAuthHeaders(),
       credentials: 'include',
     });
@@ -190,10 +176,16 @@ export async function listUsers(): Promise<AuthUser[]> {
   }
 }
 
-export async function createUser(payload: { username: string; name: string; password: string; role: 'admin' | 'user' }): Promise<{ success: boolean; user?: AuthUser; error?: string }> {
+export async function createUser(payload: {
+  username: string;
+  name: string;
+  password: string;
+  role: 'admin' | 'user';
+  sex?: PatientSex;
+  birthDate?: string;
+}): Promise<{ success: boolean; user?: AuthUser; error?: string }> {
   try {
-    const usersApi = getUsersApiBase();
-    const res = await fetch(usersApi, {
+    const res = await fetch('/api/users', {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       credentials: 'include',
@@ -209,8 +201,7 @@ export async function createUser(payload: { username: string; name: string; pass
 
 export async function deleteUser(id: string): Promise<boolean> {
   try {
-    const usersApi = getUsersApiBase();
-    const res = await fetch(`${usersApi}/${id}`, {
+    const res = await fetch(`/api/users/${id}`, {
       method: 'DELETE',
       headers: getAuthHeaders(),
       credentials: 'include',
@@ -223,8 +214,7 @@ export async function deleteUser(id: string): Promise<boolean> {
 
 export async function resetUserPassword(id: string, newPassword: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const usersApi = getUsersApiBase();
-    const res = await fetch(`${usersApi}/${id}/reset-password`, {
+    const res = await fetch(`/api/users/${id}/reset-password`, {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       credentials: 'include',

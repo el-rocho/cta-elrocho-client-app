@@ -173,7 +173,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <option value="">{t('settings.patientSexSelect')}</option>
                   <option value="masculino">{t('settings.patientSexMale')}</option>
                   <option value="femenino">{t('settings.patientSexFemale')}</option>
-                  <option value="otro">{t('settings.patientSexOther')}</option>
                 </select>
               </div>
 

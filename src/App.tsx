@@ -383,6 +383,7 @@ export function App() {
           onClose={() => setIsExportModalOpen(false)}
           sessions={sessions}
           settings={settings}
+          currentUser={currentUser}
           onImportReadings={handleImportReadings}
           onNotify={(msg) => setNotificationMsg(msg)}
         />
