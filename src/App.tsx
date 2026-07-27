@@ -328,8 +328,6 @@ export function App() {
 
         <Header
           currentUser={currentUser}
-          serverUrl={serverUrl}
-          onOpenServerModal={() => setIsServerModalOpen(true)}
           onOpenExportModal={() => setIsExportModalOpen(true)}
           onOpenSettingsModal={() => setIsSettingsModalOpen(true)}
           onOpenUserMgmtModal={() => setIsUserMgmtModalOpen(true)}
@@ -397,6 +395,11 @@ export function App() {
           onResetDemoData={handleResetDemoData}
           onClearAllData={handleClearAllData}
           onTriggerManualBackup={handleTriggerManualBackup}
+          serverUrl={serverUrl}
+          onOpenServerModal={() => {
+            setIsSettingsModalOpen(false);
+            setIsServerModalOpen(true);
+          }}
           onOpenTotpModal={() => {
             setIsSettingsModalOpen(false);
             setIsTotpModalOpen(true);

@@ -1,6 +1,6 @@
 import React from 'react';
 import type { AppSettings, BackupFrequency, PatientSex, LanguageOption } from '../types/bloodPressure';
-import { Settings, X, ShieldAlert, ShieldCheck, Clock, Armchair, RotateCcw, Save, Folder, CalendarCheck, User, Trash2, Globe } from 'lucide-react';
+import { Settings, X, ShieldAlert, ShieldCheck, Clock, Armchair, RotateCcw, Save, Folder, CalendarCheck, User, Trash2, Globe, Server } from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext';
 import { calculateAge } from '../utils/pdfGenerator';
 import { FlagES, FlagGB } from './FlagIcons';
@@ -13,6 +13,8 @@ interface SettingsModalProps {
   onResetDemoData: () => void;
   onClearAllData: () => void;
   onTriggerManualBackup: () => void;
+  serverUrl?: string;
+  onOpenServerModal?: () => void;
   onOpenTotpModal?: () => void;
   isTotpEnabled?: boolean;
 }
@@ -25,6 +27,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onResetDemoData,
   onClearAllData,
   onTriggerManualBackup,
+  serverUrl,
+  onOpenServerModal,
   onOpenTotpModal,
   isTotpEnabled = false,
 }) => {
@@ -85,9 +89,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         <div className="modal-header">
           <div className="modal-title-box">
             <Settings className="text-blue" size={24} />
-            <h2>{t('settings.modalTitle')}</h2>
+            <h2>{t('settings.title')}</h2>
           </div>
-          <button onClick={onClose} className="btn-close" title={t('settings.closeTooltip')}>
+          <button onClick={onClose} className="btn-close" title={t('settings.close')}>
             <X size={20} />
           </button>
         </div>
@@ -119,47 +123,78 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           </div>
 
-          {/* Opción 2: Perfil del paciente */}
+          {/* Opción 2: Servidor autoalojado */}
+          {onOpenServerModal && (
+            <div className="settings-section border-top">
+              <div className="field-label">
+                <Server size={22} className="text-blue settings-field-icon" />
+                <span>{t('settings.serverTitle')}</span>
+              </div>
+              <p className="settings-desc" style={{ marginBottom: '10px' }}>
+                {serverUrl
+                  ? t('settings.serverCurrent', { url: serverUrl })
+                  : t('settings.serverDesc')}
+              </p>
+              <button
+                type="button"
+                className="btn-primary-large"
+                onClick={onOpenServerModal}
+                style={{ width: '100%', justifyContent: 'center', padding: '10px', fontSize: '13px' }}
+              >
+                <Server size={18} />
+                <span>{t('settings.serverChange')}</span>
+              </button>
+            </div>
+          )}
+
+          {/* Opción 3: Perfil del paciente */}
           <div className="settings-section border-top">
             <div className="field-label">
               <User size={22} className="settings-field-icon" />
-              <span>{t('settings.patientProfileTitle')}</span>
+              <span>{t('settings.patientProfile')}</span>
             </div>
-            <p className="settings-desc">{t('settings.patientProfileDesc')}</p>
+            <p className="settings-desc patient-profile-desc">{t('settings.patientProfileDesc')}</p>
 
-            <div className="form-group" style={{ marginBottom: '12px' }}>
-              <label>{t('settings.patientNameLabel')}</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder={t('settings.patientNamePlaceholder')}
-                value={settings.patientName || ''}
-                onChange={(e) => handlePatientNameChange(e.target.value)}
-              />
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              <div className="form-group">
-                <label>{t('settings.patientSexLabel')}</label>
-                <select
-                  className="form-input"
-                  value={settings.patientSex || ''}
-                  onChange={(e) => handlePatientSexChange(e.target.value as PatientSex)}
-                >
-                  <option value="">{t('settings.patientSexSelect')}</option>
-                  <option value="masculino">{t('settings.patientSexMale')}</option>
-                  <option value="femenino">{t('settings.patientSexFemale')}</option>
-                </select>
+            <div className="patient-profile-fields">
+              <div className="patient-profile-field">
+                <label className="settings-desc">{t('settings.fullName')}</label>
+                <input
+                  type="text"
+                  className="modal-input patient-profile-input"
+                  placeholder={t('settings.fullNamePlaceholder')}
+                  value={settings.patientName || ''}
+                  onChange={(e) => handlePatientNameChange(e.target.value)}
+                />
               </div>
 
-              <div className="form-group">
-                <label>{t('settings.patientBirthDateLabel')}</label>
+              <div className="patient-profile-field">
+                <label className="settings-desc">{t('settings.birthDate')}</label>
                 <input
                   type="date"
-                  className="form-input"
+                  className="modal-input patient-profile-input"
                   value={settings.patientBirthDate || ''}
                   onChange={(e) => handlePatientBirthDateChange(e.target.value)}
                 />
+              </div>
+
+              <div className="patient-profile-field">
+                <label className="settings-desc">{t('settings.sexLabel')}</label>
+                <div className="chip-options-row patient-sex-options">
+                  <button
+                    type="button"
+                    className={`chip-select ${settings.patientSex === 'masculino' ? 'active' : ''}`}
+                    onClick={() => handlePatientSexChange('masculino')}
+                  >
+                    {t('settings.sexMale')}
+                  </button>
+                  <button
+                    type="button"
+                    className={`chip-select ${settings.patientSex === 'femenino' ? 'active' : ''}`}
+                    onClick={() => handlePatientSexChange('femenino')}
+                  >
+                    {t('settings.sexFemale')}
+                  </button>
+                </div>
               </div>
             </div>
           </div>

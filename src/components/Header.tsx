@@ -1,13 +1,11 @@
 import React from 'react';
-import { ShieldCheck, Download, Moon, Sun, Settings, LogOut, Users, Server } from 'lucide-react';
+import { ShieldCheck, Download, Moon, Sun, Settings, LogOut, Users } from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext';
 import { AppLogo } from './AppLogo';
 import type { AuthUser } from '../types/bloodPressure';
 
 interface HeaderProps {
   currentUser: AuthUser | null;
-  serverUrl?: string;
-  onOpenServerModal?: () => void;
   onOpenExportModal: () => void;
   onOpenSettingsModal: () => void;
   onOpenUserMgmtModal?: () => void;
@@ -18,8 +16,6 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   currentUser,
-  serverUrl,
-  onOpenServerModal,
   onOpenExportModal,
   onOpenSettingsModal,
   onOpenUserMgmtModal,
@@ -28,7 +24,7 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleDarkMode,
 }) => {
   const { t } = useLanguage();
-  const appVersion = import.meta.env.VITE_APP_VERSION || 'v1.5.5';
+  const appVersion = import.meta.env.VITE_APP_VERSION || 'v1.5.6';
 
   return (
     <header className="app-header">
@@ -48,18 +44,6 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       <div className="header-actions">
-        {onOpenServerModal && (
-          <button
-            type="button"
-            onClick={onOpenServerModal}
-            className="btn-icon"
-            title={serverUrl ? `Servidor: ${serverUrl}` : 'Configurar Servidor'}
-            style={{ color: '#3b82f6' }}
-          >
-            <Server size={22} />
-          </button>
-        )}
-
         <button
           onClick={onToggleDarkMode}
           className="btn-icon"

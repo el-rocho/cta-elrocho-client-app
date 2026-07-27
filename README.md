@@ -5,9 +5,9 @@
 # Control Tensión Arterial (Cliente Móvil Android & PWA) 🩺📱
 
 ![Built with Vibe Coding](https://img.shields.io/badge/Built%20with-Vibe%20Coding%20%26%20AI-7c3aed?style=for-the-badge&logo=sparkles)
-![Android APK](https://img.shields.io/badge/Android-APK%20Nativa%20v1.5.5-3DDC84?style=for-the-badge&logo=android)
+![Android APK](https://img.shields.io/badge/Android-APK%20Nativa%20v1.5.6-3DDC84?style=for-the-badge&logo=android)
 ![PWA Ready](https://img.shields.io/badge/Web-PWA%20Instalable-0284c7?style=for-the-badge&logo=pwa)
-![Obtainium Compatible](https://img.shields.io/badge/Obtainium-Releases%20v1.5.5-2563eb?style=for-the-badge&logo=github)
+![Obtainium Compatible](https://img.shields.io/badge/Obtainium-Releases%20v1.5.6-2563eb?style=for-the-badge&logo=github)
 ![Licencia](https://img.shields.io/badge/Licencia-MIT-blue?style=for-the-badge)
 
 Aplicación móvil nativa Android (APK) y PWA web diseñada como cliente dedicado para conectar con el servidor autoalojado [**Control Tensión Arterial (cta-elrocho-selfhosted)**](https://github.com/el-rocho/cta-elrocho-selfhosted).
@@ -46,7 +46,8 @@ El proyecto **Control Tensión Arterial** dispone de tres aplicaciones complemen
 
 Las compilaciones oficiales del APK y el despliegue de la PWA se generan automáticamente mediante **GitHub Actions**.
 
-### 1. 📱 Instalación Novedosa con Obtainium (Recomendado en Android):
+### 1. 📱 Instalación con Obtainium (recomendada en Android)
+
 La app es 100% compatible con **[Obtainium](https://github.com/ImranR98/Obtainium)**. Escanea este código QR desde Obtainium en tu teléfono Android o añade manualmente la URL del repositorio (`https://github.com/el-rocho/cta-elrocho-client-app`):
 
 <p align="center">
@@ -55,12 +56,14 @@ La app es 100% compatible con **[Obtainium](https://github.com/ImranR98/Obtainiu
   <sub><b>Escanea desde Obtainium para instalar y recibir actualizaciones</b></sub>
 </p>
 
-### 2. 📥 Descarga Manual de APK (GitHub Releases):
+### 2. 📥 Descarga manual del APK (GitHub Releases)
+
 1. Accede a **[Releases del Repositorio](https://github.com/el-rocho/cta-elrocho-client-app/releases)**.
 2. Descarga el archivo `control-tension-client-app.apk`.
 3. Instala el APK en tu dispositivo Android.
 
-### 3. 🌐 Uso como PWA (Navegador Web / Pantalla de Inicio):
+### 3. 🌐 Uso como PWA (navegador web / pantalla de inicio)
+
 - También puedes acceder a la versión PWA a través de GitHub Pages e instalarla en la pantalla de inicio de tu navegador iOS/Android.
 
 > [!IMPORTANT]
