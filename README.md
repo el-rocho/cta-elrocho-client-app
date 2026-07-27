@@ -63,6 +63,11 @@ La app es 100% compatible con **[Obtainium](https://github.com/ImranR98/Obtainiu
 ### 3. 🌐 Uso como PWA (Navegador Web / Pantalla de Inicio):
 - También puedes acceder a la versión PWA a través de GitHub Pages e instalarla en la pantalla de inicio de tu navegador iOS/Android.
 
+> [!IMPORTANT]
+> **Limitación al conectar con servidores HTTP locales:** la PWA alojada en GitHub Pages utiliza HTTPS. Por seguridad, los navegadores bloquean las conexiones desde una página HTTPS hacia un servidor local HTTP por considerarlas contenido mixto.
+>
+> Para conectarte a un servidor HTTP de tu red local, utiliza la aplicación Android (APK). La PWA podrá conectarse solamente si el servidor está disponible mediante HTTPS con un certificado válido. Abrir o autorizar manualmente la dirección HTTP en otra pestaña del navegador no elimina esta restricción.
+
 ---
 
 ## 🚀 Conexión con el Servidor Autoalojado
@@ -71,6 +76,8 @@ La app es 100% compatible con **[Obtainium](https://github.com/ImranR98/Obtainiu
 2. Abre la aplicación **Control Tensión Server**.
 3. En la pantalla inicial de configuración, introduce la dirección de tu servidor (ejemplo: `http://192.168.1.100:3000`).
 4. Pulsa **Probar y Conectar**. La dirección se guardará de forma permanente y la app se conectará al instante.
+
+> Si utilizas una dirección `http://` local, realiza la conexión desde el APK Android. Para usar la PWA de GitHub Pages, configura el servidor con HTTPS y un certificado válido.
 
 ---
 
