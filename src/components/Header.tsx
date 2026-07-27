@@ -28,7 +28,7 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleDarkMode,
 }) => {
   const { t } = useLanguage();
-  const appVersion = import.meta.env.VITE_APP_VERSION || 'v1.5.4';
+  const appVersion = import.meta.env.VITE_APP_VERSION || 'v1.5.5';
 
   return (
     <header className="app-header">
@@ -60,6 +60,14 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         )}
 
+        <button
+          onClick={onToggleDarkMode}
+          className="btn-icon"
+          title={isDarkMode ? t('header.lightMode') : t('header.darkMode')}
+        >
+          {isDarkMode ? <Sun size={22} /> : <Moon size={22} />}
+        </button>
+
         {currentUser && currentUser.role === 'admin' && onOpenUserMgmtModal && (
           <button
             type="button"
@@ -70,14 +78,6 @@ export const Header: React.FC<HeaderProps> = ({
             <Users size={22} />
           </button>
         )}
-
-        <button
-          onClick={onToggleDarkMode}
-          className="btn-icon"
-          title={isDarkMode ? t('header.lightMode') : t('header.darkMode')}
-        >
-          {isDarkMode ? <Sun size={22} /> : <Moon size={22} />}
-        </button>
 
         <button
           onClick={onOpenSettingsModal}

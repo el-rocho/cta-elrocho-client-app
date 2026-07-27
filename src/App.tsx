@@ -397,14 +397,11 @@ export function App() {
           onResetDemoData={handleResetDemoData}
           onClearAllData={handleClearAllData}
           onTriggerManualBackup={handleTriggerManualBackup}
-          onOpenServerModal={() => {
-            setIsSettingsModalOpen(false);
-            setIsServerModalOpen(true);
-          }}
           onOpenTotpModal={() => {
             setIsSettingsModalOpen(false);
             setIsTotpModalOpen(true);
           }}
+          isTotpEnabled={Boolean(currentUser?.totp_enabled)}
         />
 
         <TotpSetupModal

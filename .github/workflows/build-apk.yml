@@ -39,7 +39,7 @@ jobs:
           if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
             TAG="${{ github.ref_name }}"
           else
-            TAG="v1.5.4"
+            TAG="v1.5.5"
           fi
           VITE_APP_VERSION="$TAG" npm run build
 
@@ -63,7 +63,7 @@ jobs:
           if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
             TAG="${{ github.ref_name }}"
           else
-            TAG="v1.5.4"
+            TAG="v1.5.5"
           fi
           VERSION="${TAG#v}"
           IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
@@ -92,7 +92,7 @@ jobs:
           if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
             TAG="${{ github.ref_name }}"
           else
-            TAG="v1.5.4"
+            TAG="v1.5.5"
           fi
           echo "Publicando release $TAG con GitHub CLI..."
           gh release create "$TAG" android/app/build/outputs/apk/debug/control-tension-client-app.apk --title "$TAG" --notes "Release $TAG - Control Tensión Client App APK (Cliente Autoalojado)" --latest || gh release upload "$TAG" android/app/build/outputs/apk/debug/control-tension-client-app.apk --clobber

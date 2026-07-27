@@ -1,10 +1,9 @@
 import React from 'react';
 import type { AppSettings, BackupFrequency, PatientSex, LanguageOption } from '../types/bloodPressure';
-import { Settings, X, ShieldAlert, Clock, Armchair, RotateCcw, Save, Folder, CalendarCheck, User, Trash2, Globe, Server } from 'lucide-react';
+import { Settings, X, ShieldAlert, ShieldCheck, Clock, Armchair, RotateCcw, Save, Folder, CalendarCheck, User, Trash2, Globe } from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext';
 import { calculateAge } from '../utils/pdfGenerator';
 import { FlagES, FlagGB } from './FlagIcons';
-import { getSavedServerUrl } from '../services/serverConfigService';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -15,7 +14,7 @@ interface SettingsModalProps {
   onClearAllData: () => void;
   onTriggerManualBackup: () => void;
   onOpenTotpModal?: () => void;
-  onOpenServerModal?: () => void;
+  isTotpEnabled?: boolean;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -27,10 +26,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClearAllData,
   onTriggerManualBackup,
   onOpenTotpModal,
-  onOpenServerModal,
+  isTotpEnabled = false,
 }) => {
   const { t } = useLanguage();
-  const currentServerUrl = getSavedServerUrl();
 
   if (!isOpen) return null;
 
@@ -95,28 +93,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         <div className="settings-body">
-          {/* Opción Servidor Autoalojado */}
-          {onOpenServerModal && (
-            <div className="settings-section" style={{ background: 'var(--bg-secondary, #f8fafc)', padding: '14px', borderRadius: '12px', marginBottom: '16px' }}>
-              <div className="field-label" style={{ marginBottom: '6px' }}>
-                <Server size={20} className="text-blue settings-field-icon" />
-                <span style={{ fontWeight: 700 }}>Servidor Autoalojado Conectado</span>
-              </div>
-              <p className="settings-desc" style={{ marginBottom: '12px', fontSize: '0.85rem' }}>
-                Dirección actual: <code>{currentServerUrl || 'No configurado'}</code>
-              </p>
-              <button
-                type="button"
-                className="btn-primary-large"
-                onClick={onOpenServerModal}
-                style={{ width: '100%', justifyContent: 'center', padding: '9px', fontSize: '13px' }}
-              >
-                <Server size={16} />
-                <span>Cambiar IP / URL del Servidor</span>
-              </button>
-            </div>
-          )}
-
           {/* Opción 1: Idioma */}
           <div className="settings-section">
             <div className="field-label">
@@ -257,11 +233,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {onOpenTotpModal && (
             <div className="settings-section border-top">
               <div className="field-label">
-                <ShieldAlert size={22} className="text-blue settings-field-icon" />
+                {isTotpEnabled
+                  ? <ShieldCheck size={22} className="text-green settings-field-icon" />
+                  : <ShieldAlert size={22} className="text-blue settings-field-icon" />}
                 <span>Seguridad de la Cuenta</span>
               </div>
               <p className="settings-desc" style={{ marginBottom: '10px' }}>
-                Protege tu acceso con verificación en dos pasos (Google Authenticator, Aegis, Authy, etc.).
+                {isTotpEnabled
+                  ? 'La autenticación en dos pasos está activa. Puedes desactivarla o vincular una nueva aplicación de autenticación.'
+                  : 'Protege tu acceso con verificación en dos pasos (Google Authenticator, Aegis, Authy, etc.).'}
               </p>
               <button
                 type="button"
@@ -269,8 +249,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 onClick={onOpenTotpModal}
                 style={{ width: '100%', justifyContent: 'center', padding: '10px', fontSize: '13px' }}
               >
-                <ShieldAlert size={18} />
-                <span>Configurar 2FA (TOTP)</span>
+                {isTotpEnabled ? <ShieldCheck size={18} /> : <ShieldAlert size={18} />}
+                <span>{isTotpEnabled ? 'Administrar 2FA (activo)' : 'Configurar 2FA (TOTP)'}</span>
               </button>
             </div>
           )}

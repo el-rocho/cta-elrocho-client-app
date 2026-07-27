@@ -1,13 +1,13 @@
 <p align="center">
-  <img src="public/logo-day.png" alt="Logo Control Tensión Server - Modo Día" width="160" height="160" />
+  <img src="public/logo-day.png" alt="Logo Control Tensión Arterial Client App" width="160" height="160" />
 </p>
 
 # Control Tensión Arterial (Cliente Móvil Android & PWA) 🩺📱
 
 ![Built with Vibe Coding](https://img.shields.io/badge/Built%20with-Vibe%20Coding%20%26%20AI-7c3aed?style=for-the-badge&logo=sparkles)
-![Android APK](https://img.shields.io/badge/Android-APK%20Nativa%20v1.5.4-3DDC84?style=for-the-badge&logo=android)
+![Android APK](https://img.shields.io/badge/Android-APK%20Nativa%20v1.5.5-3DDC84?style=for-the-badge&logo=android)
 ![PWA Ready](https://img.shields.io/badge/Web-PWA%20Instalable-0284c7?style=for-the-badge&logo=pwa)
-![Obtainium Compatible](https://img.shields.io/badge/Obtainium-Releases%20v1.5.4-2563eb?style=for-the-badge&logo=github)
+![Obtainium Compatible](https://img.shields.io/badge/Obtainium-Releases%20v1.5.5-2563eb?style=for-the-badge&logo=github)
 ![Licencia](https://img.shields.io/badge/Licencia-MIT-blue?style=for-the-badge)
 
 Aplicación móvil nativa Android (APK) y PWA web diseñada como cliente dedicado para conectar con el servidor autoalojado [**Control Tensión Arterial (cta-elrocho-selfhosted)**](https://github.com/el-rocho/cta-elrocho-selfhosted).
