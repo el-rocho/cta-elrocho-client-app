@@ -2,6 +2,8 @@
  * Servicio para gestionar la URL y conectividad del servidor autoalojado
  */
 
+import { Capacitor } from '@capacitor/core';
+
 const SERVER_URL_KEY = 'cta_server_url';
 
 export function getSavedServerUrl(): string {
@@ -84,6 +86,15 @@ export async function testServerConnection(url: string): Promise<ServerConnectio
         url: cleanUrl,
       };
     }
+
+    if (Capacitor.isNativePlatform() && cleanUrl.startsWith('http://')) {
+      return {
+        success: false,
+        error: 'Android no pudo acceder al servidor HTTP local. Comprueba que el teléfono esté en la misma red Wi-Fi, que no exista aislamiento entre dispositivos y que la dirección se abra en el navegador del teléfono.',
+        url: cleanUrl,
+      };
+    }
+
     return {
       success: false,
       error: 'No se pudo conectar con el servidor. Revisa la IP/puerto y asegúrate de que Docker o el servidor estén activos.',

@@ -2,5 +2,8 @@
   "appId": "es.elrocho.tensionarterial.cliente",
   "appName": "CTA client",
   "webDir": "dist",
-  "bundledWebRuntime": false
+  "bundledWebRuntime": false,
+  "android": {
+    "allowMixedContent": true
+  }
 }
