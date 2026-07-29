@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import type { BloodPressureReading, ArmPosition, DateRange, AppSettings, InputMode, AuthUser } from './types/bloodPressure';
 import {
   fetchReadingsFromServer,
   addReadingToServer,
   updateReadingOnServer,
+  updateMedicationContextForAllReadings,
   deleteReadingFromServer,
   deleteSessionFromServer,
   clearAllReadingsOnServer,
@@ -55,7 +56,47 @@ export function App() {
   const [readingToEdit, setReadingToEdit] = useState<BloodPressureReading | null>(null);
   const [notificationMsg, setNotificationMsg] = useState<string | ToastNotification | null>(null);
 
-  const { sessions } = processReadingsIntoSessions(readings, settings);
+  const handleUpdateSettings = useCallback(async (newSettings: AppSettings) => {
+    setSettings(newSettings);
+    await saveSettingsToServer(newSettings);
+  }, []);
+
+  const handleMedicationContextChange = async (
+    takesMedication: boolean,
+    recalculateHistory: boolean
+  ): Promise<boolean> => {
+    const updatedSettings = {
+      ...settings,
+      takesAntihypertensiveMedication: takesMedication,
+    };
+    if (recalculateHistory) {
+      const updated = await updateMedicationContextForAllReadings(takesMedication);
+      if (!updated) {
+        setNotificationMsg(getTranslation(settings.language, 'settings.medicationChangeFailed'));
+        return false;
+      }
+      setSettings(updatedSettings);
+      setReadings((current) =>
+        current.map((reading) => ({
+          ...reading,
+          takesAntihypertensiveMedication: takesMedication,
+        }))
+      );
+      return true;
+    }
+    const saved = await saveSettingsToServer(updatedSettings);
+    if (!saved) {
+      setNotificationMsg(getTranslation(settings.language, 'settings.medicationChangeFailed'));
+      return false;
+    }
+    setSettings(updatedSettings);
+    return true;
+  };
+
+  const { sessions } = useMemo(
+    () => processReadingsIntoSessions(readings, settings),
+    [readings, settings]
+  );
 
   // 1. Verificar sesión del servidor al arrancar o al cambiar de URL de servidor
   useEffect(() => {
@@ -132,12 +173,7 @@ export function App() {
         setTimeout(() => setNotificationMsg(null), 6000);
       }
     }
-  }, [readings.length, settings.backupFrequency, currentUser]);
-
-  const handleUpdateSettings = async (newSettings: AppSettings) => {
-    setSettings(newSettings);
-    await saveSettingsToServer(newSettings);
-  };
+  }, [currentUser, sessions, settings, handleUpdateSettings]);
 
   const handleUpdateInputMode = (mode: InputMode) => {
     const updated = { ...settings, preferredInputMode: mode };
@@ -161,6 +197,7 @@ export function App() {
       patientName: settings.patientName,
       patientSex: settings.patientSex,
       patientAge: settings.patientAge,
+      takesAntihypertensiveMedication: settings.takesAntihypertensiveMedication,
     }, settings.language);
 
     const updatedSettings = {
@@ -208,6 +245,7 @@ export function App() {
     heartRate: number;
     arm: ArmPosition;
     notes?: string;
+    pulsePressureWarningConfirmed?: boolean;
   }) => {
     const created = await addReadingToServer({
       timestamp: new Date().toISOString(),
@@ -216,6 +254,8 @@ export function App() {
       heartRate: data.heartRate,
       arm: data.arm,
       notes: data.notes,
+      pulsePressureWarningConfirmed: data.pulsePressureWarningConfirmed,
+      takesAntihypertensiveMedication: settings.takesAntihypertensiveMedication,
     });
     if (created) {
       setReadings((prev) => [created, ...prev]);
@@ -341,6 +381,7 @@ export function App() {
           settings={settings}
           onUpdateInputMode={handleUpdateInputMode}
           lastReading={lastReading}
+          readings={readings}
         />
 
         <WhiteCoatBanner settings={settings} onOpenSettings={() => setIsSettingsModalOpen(true)} />
@@ -354,6 +395,7 @@ export function App() {
           onEditReading={(reading) => setReadingToEdit(reading)}
           dateRange={dateRange}
           onDateRangeChange={setDateRange}
+          takesMedication={settings.takesAntihypertensiveMedication}
         />
 
         <footer className="app-footer">
@@ -375,6 +417,7 @@ export function App() {
           onUpdateInputMode={handleUpdateInputMode}
           onClose={() => setReadingToEdit(null)}
           onSaveReading={handleSaveReadingEdit}
+          readings={readings}
         />
 
         <ExportModal
@@ -392,6 +435,7 @@ export function App() {
           onClose={() => setIsSettingsModalOpen(false)}
           settings={settings}
           onUpdateSettings={handleUpdateSettings}
+          onMedicationContextChange={handleMedicationContextChange}
           onResetDemoData={handleResetDemoData}
           onClearAllData={handleClearAllData}
           onTriggerManualBackup={handleTriggerManualBackup}

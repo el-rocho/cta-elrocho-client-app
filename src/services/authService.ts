@@ -55,7 +55,7 @@ export async function setupAdmin(payload: {
     if (!res.ok) return { success: false, error: data.error || 'Error al crear administrador inicial' };
     saveToken(data.token);
     return { success: true, user: data.user };
-  } catch (err) {
+  } catch {
     return { success: false, error: 'Error de conexión con el servidor' };
   }
 }
@@ -84,7 +84,7 @@ export async function login(payload: { username: string; password: string }): Pr
 
     saveToken(data.token);
     return { success: true, user: data.user };
-  } catch (err) {
+  } catch {
     return { success: false, error: 'Error de conexión con el servidor' };
   }
 }
@@ -106,7 +106,7 @@ export async function verifyLoginTotp(payload: { tempToken: string; code: string
     if (!res.ok) return { success: false, error: data.error || 'Código 2FA incorrecto' };
     saveToken(data.token);
     return { success: true, user: data.user };
-  } catch (err) {
+  } catch {
     return { success: false, error: 'Error de conexión con el servidor' };
   }
 }
@@ -159,7 +159,7 @@ export async function verifyAndEnableTotp(code: string): Promise<{ success: bool
     const data = await res.json();
     if (!res.ok) return { success: false, error: data.error || 'Error al verificar 2FA' };
     return { success: true, recoveryCodes: data.recoveryCodes };
-  } catch (err) {
+  } catch {
     return { success: false, error: 'Error de conexión' };
   }
 }
@@ -173,7 +173,7 @@ export async function disableTotp(): Promise<boolean> {
       credentials: 'include',
     });
     return res.ok;
-  } catch (err) {
+  } catch {
     return false;
   }
 }
@@ -188,7 +188,7 @@ export async function listUsers(): Promise<AuthUser[]> {
     });
     if (!res.ok) return [];
     return await res.json();
-  } catch (err) {
+  } catch {
     return [];
   }
 }
@@ -212,7 +212,7 @@ export async function createUser(payload: {
     const data = await res.json();
     if (!res.ok) return { success: false, error: data.error || 'Error al crear usuario' };
     return { success: true, user: data };
-  } catch (err) {
+  } catch {
     return { success: false, error: 'Error de conexión' };
   }
 }
@@ -226,7 +226,7 @@ export async function deleteUser(id: string): Promise<boolean> {
       credentials: 'include',
     });
     return res.ok;
-  } catch (err) {
+  } catch {
     return false;
   }
 }
@@ -243,7 +243,7 @@ export async function resetUserPassword(id: string, newPassword: string): Promis
     const data = await res.json();
     if (!res.ok) return { success: false, error: data.error || 'Error al restablecer clave' };
     return { success: true };
-  } catch (err) {
+  } catch {
     return { success: false, error: 'Error de conexión' };
   }
 }

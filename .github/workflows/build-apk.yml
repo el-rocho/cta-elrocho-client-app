@@ -7,8 +7,6 @@ on:
       - dev
     tags:
       - 'v*'
-  release:
-    types: [published]
   workflow_dispatch:
 
 permissions:
@@ -34,14 +32,29 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
-      - name: Compilar aplicación web (dist)
+      - name: Resolver versión de la compilación
         run: |
           if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
-            TAG="${{ github.ref_name }}"
+            APP_VERSION="${{ github.ref_name }}"
+            APP_VERSION="${APP_VERSION#v}"
           else
-            TAG="v1.5.6"
+            APP_VERSION="$(node -p "require('./package.json').version")"
           fi
-          VITE_APP_VERSION="$TAG" npm run build
+
+          BASE_VERSION="${APP_VERSION%%-*}"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$BASE_VERSION"
+          BASE_CODE=$((MAJOR * 1000000 + MINOR * 10000 + PATCH * 100))
+          if [[ "$APP_VERSION" =~ -beta\.([0-9]+)$ ]]; then
+            VERSION_CODE=$((BASE_CODE + BASH_REMATCH[1]))
+          else
+            VERSION_CODE=$((BASE_CODE + 99))
+          fi
+
+          echo "APP_VERSION=$APP_VERSION" >> "$GITHUB_ENV"
+          echo "APP_VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
+
+      - name: Compilar aplicación web (dist)
+        run: VITE_APP_VERSION="v${APP_VERSION}" npm run build
 
       - name: Sincronizar Capacitor con Android
         run: npx cap sync android
@@ -60,20 +73,9 @@ jobs:
 
       - name: Compilar APK con Gradle
         run: |
-          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
-            TAG="${{ github.ref_name }}"
-          else
-            TAG="v1.5.6"
-          fi
-          VERSION="${TAG#v}"
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
-          MAJOR=${MAJOR:-1}
-          MINOR=${MINOR:-5}
-          PATCH=${PATCH:-4}
-          VERSION_CODE=$((MAJOR * 10000 + MINOR * 100 + PATCH))
-          echo "Compilando APK versión $VERSION (versionCode: $VERSION_CODE)..."
+          echo "Compilando APK versión $APP_VERSION (versionCode: $APP_VERSION_CODE)..."
           cd android
-          ./gradlew assembleDebug -PappVersionName="$VERSION" -PappVersionCode="$VERSION_CODE" --stacktrace
+          ./gradlew assembleDebug -PappVersionName="$APP_VERSION" -PappVersionCode="$APP_VERSION_CODE" --stacktrace
 
       - name: Preparar APK con nombre amigable
         run: |
@@ -82,19 +84,20 @@ jobs:
       - name: Subir APK como Artefacto de Workflow
         uses: actions/upload-artifact@v4
         with:
-          name: control-tension-client-app-apk
+          name: control-tension-client-app-apk-${{ env.APP_VERSION }}
           path: android/app/build/outputs/apk/debug/control-tension-client-app.apk
           retention-days: 14
 
       - name: Publicar APK en GitHub Releases (GitHub CLI)
-        if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+        if: startsWith(github.ref, 'refs/tags/v')
         run: |
-          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
-            TAG="${{ github.ref_name }}"
+          TAG="v${APP_VERSION}"
+          if [[ "$APP_VERSION" == *-* ]]; then
+            RELEASE_FLAG="--prerelease"
           else
-            TAG="v1.5.6"
+            RELEASE_FLAG="--latest"
           fi
           echo "Publicando release $TAG con GitHub CLI..."
-          gh release create "$TAG" android/app/build/outputs/apk/debug/control-tension-client-app.apk --title "$TAG" --notes "Release $TAG - Control Tensión Client App APK (Cliente Autoalojado)" --latest || gh release upload "$TAG" android/app/build/outputs/apk/debug/control-tension-client-app.apk --clobber
+          gh release create "$TAG" android/app/build/outputs/apk/debug/control-tension-client-app.apk --title "$TAG" --notes "Release $TAG - Control Tensión Client App APK (Cliente Autoalojado)" "$RELEASE_FLAG" || gh release upload "$TAG" android/app/build/outputs/apk/debug/control-tension-client-app.apk --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
