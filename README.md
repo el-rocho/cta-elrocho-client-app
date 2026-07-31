@@ -62,6 +62,8 @@ La app es 100% compatible con **[Obtainium](https://github.com/ImranR98/Obtainiu
 2. Descarga el archivo `control-tension-client-app.apk`.
 3. Instala el APK en tu dispositivo Android.
 
+Antes de instalar una nueva versión, consulta la **[guía de actualización](UPGRADING.md)** y las notas de la versión correspondiente. Actualiza conjuntamente el cliente y el servidor autoalojado.
+
 ### 3. 🌐 Uso como PWA (navegador web / pantalla de inicio)
 
 - También puedes acceder a la versión PWA a través de GitHub Pages e instalarla en la pantalla de inicio de tu navegador iOS/Android.
