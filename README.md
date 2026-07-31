@@ -35,10 +35,15 @@ El proyecto **Control Tensión Arterial** dispone de tres aplicaciones complemen
 - **Conexión Dinámica a Servidor**: Configura y prueba fácilmente la dirección IP o URL de tu servidor autoalojado (ej. `http://192.168.1.50:3000` o `https://salud.mi-casa.local`).
 - **Autenticación Completa & 2FA TOTP**: Inicio de sesión multiusuario, creación de cuenta de administrador y validación de 2 factores (Google Authenticator, Aegis, Authy, etc.).
 - **Persistencia de Sesión Segura**: Envío automático de cabecera `X-Session-Token` para evitar cierres de sesión involuntarios en dispositivos móviles.
-- **Exportación e Informes Nativa Android**: Genera informes PDF con gráficos vectoriales y copias CSV guardándolos directamente en los documentos del teléfono mediante `@capacitor/filesystem` y compartiéndolos con `@capacitor/share`.
-- **Filtro de Síndrome de Bata Blanca**: Algoritmo inteligente que descarta tomas iniciales elevadas provocadas por la ansiedad del manguito.
-- **Gráficos de Tendencias**: Evolución temporal de tensión sistólica, diastólica y pulso.
+- **Tres Referencias Clínicas**: Etiquetas y avisos configurables según `ESC 2024`, `AHA/ACC 2025` o `ISH 2020`, sin modificar las mediciones.
+- **Objetivos Terapéuticos**: Valores recomendados por guía y edad para usuarios medicados, editables según la indicación del facultativo.
+- **Exportación e Informes Nativa Android**: Genera PDF y CSV con la guía seleccionada y el desglose de tomas efectivas y descartadas, guardándolos mediante `@capacitor/filesystem` y compartiéndolos con `@capacitor/share`.
+- **Importación MyTherapy**: Detecta el formato y reconstruye las mediciones desde los registros separados de sistólica, diastólica y pulso.
+- **Filtro Opcional de Acomodación**: Agrupa tomas consecutivas y calcula un único resultado efectivo; en sesiones largas puede conservar todas las tomas o una única toma estable.
+- **Gráficos de Tendencias**: Comparación de medias diarias en cuatro semanas y evolución de `4 semanas`, `3 meses`, `6 meses` o `1 año`.
 - **Soporte Bilingüe y Modo Oscuro**: Interfaz en 🇪🇸 Español y 🇬🇧 Inglés, adaptable a modo oscuro y claro.
+
+Las reglas clínicas completas, incluido el filtro y sus límites, están documentadas en la [matriz clínica de la versión 1.6.0](docs/reglas-clinicas-v1.6.0.md).
 
 ---
 
