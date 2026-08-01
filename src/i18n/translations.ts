@@ -415,9 +415,27 @@ export const translations = {
 
     // Aviso Legal
     legal: {
-      title: 'Aviso Legal & Política de Privacidad',
-      footerLink: 'Aviso Legal & Privacidad (RGPD)',
-      close: 'Entendido y Cerrar',
+      title: 'Aviso legal y privacidad',
+      footerLink: 'Aviso legal y privacidad',
+      close: 'Entendido y cerrar',
+      medicalTitle: 'Información médica y límites de uso',
+      medicalPurpose: 'La aplicación sirve para registrar y revisar mediciones domiciliarias. Las etiquetas, medias, tendencias, objetivos orientativos y avisos se calculan mediante reglas simplificadas basadas en {guideline}; no reproducen íntegramente la guía, no validan la técnica de medición y no constituyen un diagnóstico.',
+      sourceLink: 'Consultar la fuente de referencia',
+      medicalLimits: 'Una lectura aislada, una media o un aviso no permiten confirmar o descartar una enfermedad ni determinar si la medicación es adecuada.',
+      medicationWarning: 'No inicie, suspenda ni modifique un tratamiento basándose en la aplicación. Consulte a un profesional sanitario.',
+      emergencyWarning: 'Si presenta síntomas graves o cree que puede tratarse de una urgencia, contacte con los servicios de emergencia aunque la aplicación no muestre un aviso.',
+      privacyTitle: 'Privacidad y tratamiento de datos',
+      storageLabel: 'Cliente y servidor:',
+      storageText: 'Esta aplicación envía las credenciales, mediciones, perfil, notas y configuración al servidor autoalojado cuya dirección haya configurado el usuario. También conserva en el dispositivo información de sesión y una caché local necesaria para su funcionamiento.',
+      networkLabel: 'Comunicaciones:',
+      networkText: 'No incluye publicidad ni servicios de analítica o seguimiento, ni envía los datos de salud a un servicio central gestionado por el desarrollador. Sí se comunica con el servidor configurado y con las fuentes externas que el usuario decida abrir.',
+      controlLabel: 'Seguridad de conexión:',
+      controlText: 'El administrador del servidor determina su alojamiento, accesos, registros, copias y disponibilidad. Se recomienda HTTPS; si se configura una dirección HTTP, las credenciales y los datos pueden viajar sin cifrado por la red.',
+      filesTitle: 'Copias, importaciones y exportaciones',
+      filesText: 'Las copias completas JSON y los informes CSV o PDF se descargan en el dispositivo y pueden contener mediciones, datos de perfil y notas de salud. Guárdelos y compártalos de forma segura.',
+      restoreText: 'Restaurar o importar datos los envía al servidor configurado y puede sustituir las mediciones actuales de la cuenta tras la confirmación mostrada por la aplicación.',
+      responsibilityNote: 'Quien administre el servidor es responsable de informar sobre el tratamiento y aplicar las medidas de privacidad y seguridad que correspondan.',
+      updated: 'Actualizado: agosto de 2026',
     },
 
     // Notificaciones Toast y Alertas
@@ -873,9 +891,27 @@ export const translations = {
 
     // Legal Notice
     legal: {
-      title: 'Legal Notice & Privacy Policy',
-      footerLink: 'Legal Notice & Privacy (GDPR)',
-      close: 'Understood & Close',
+      title: 'Legal notice and privacy',
+      footerLink: 'Legal notice and privacy',
+      close: 'Understood and close',
+      medicalTitle: 'Medical information and limitations',
+      medicalPurpose: 'The application is intended to record and review home measurements. Labels, averages, trends, indicative targets, and notices are calculated using simplified rules based on {guideline}; they do not reproduce the full guideline, validate measurement technique, or constitute a diagnosis.',
+      sourceLink: 'View the reference source',
+      medicalLimits: 'A single reading, an average, or a notice cannot confirm or rule out a condition or determine whether medication is appropriate.',
+      medicationWarning: 'Do not start, stop, or change treatment based on the application. Consult a healthcare professional.',
+      emergencyWarning: 'If you have severe symptoms or believe it may be an emergency, contact emergency services even if the application shows no warning.',
+      privacyTitle: 'Privacy and data processing',
+      storageLabel: 'Client and server:',
+      storageText: 'This application sends credentials, readings, profile details, notes, and settings to the self-hosted server address configured by the user. It also keeps session information and a local cache required for operation on the device.',
+      networkLabel: 'Communications:',
+      networkText: 'It includes no advertising, analytics, or tracking services and does not send health data to a central service operated by the developer. It does communicate with the configured server and external sources the user chooses to open.',
+      controlLabel: 'Connection security:',
+      controlText: 'The server administrator determines its hosting, access, logs, backups, and availability. HTTPS is recommended; if an HTTP address is configured, credentials and data may travel across the network without encryption.',
+      filesTitle: 'Backups, imports, and exports',
+      filesText: 'Complete JSON backups and CSV or PDF reports are downloaded to the device and may contain readings, profile details, and health notes. Store and share them securely.',
+      restoreText: 'Restoring or importing data sends it to the configured server and may replace the account’s current readings after the confirmation shown by the application.',
+      responsibilityNote: 'The server administrator is responsible for providing information about the processing and applying the privacy and security measures required in their circumstances.',
+      updated: 'Updated: August 2026',
     },
 
     // Toast Notifications & Alerts
