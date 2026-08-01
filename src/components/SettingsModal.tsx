@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { AppSettings, GuidelineProfile, PatientSex, LanguageOption } from '../types/bloodPressure';
-import { Settings, X, ShieldAlert, ShieldCheck, Clock, Armchair, RotateCcw, User, Trash2, Globe, Server, BookOpenCheck, Target, Info, ExternalLink } from 'lucide-react';
+import { Settings, X, ShieldAlert, ShieldCheck, Clock, Armchair, RotateCcw, User, Trash2, Globe, Server, BookOpenCheck, Target, Info, ExternalLink, Repeat2, Gauge } from 'lucide-react';
 import { useLanguage } from '../i18n/useLanguage';
 import { calculateAge } from '../utils/pdfGenerator';
 import { FlagES, FlagGB } from './FlagIcons';
@@ -17,7 +17,6 @@ interface SettingsModalProps {
   onMedicationContextChange: (takesMedication: boolean, recalculateHistory: boolean) => boolean | Promise<boolean>;
   onResetDemoData: () => void;
   onClearAllData: () => void;
-  onTriggerManualBackup: () => void;
   serverUrl?: string;
   onOpenServerModal?: () => void;
   onOpenTotpModal?: () => void;
@@ -43,6 +42,44 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [infoTopic, setInfoTopic] = useState<SettingsInfoTopic | null>(null);
 
   if (!isOpen) return null;
+
+  const detailedGuideline = infoTopic === 'esc-2024' || infoTopic === 'aha-acc-2025' || infoTopic === 'ish-2020'
+    ? infoTopic
+    : null;
+  const detailedGuidelineRanges = detailedGuideline === 'esc-2024'
+    ? [
+        { tone: 'normal', labelKey: 'nonElevatedLabel', valueKey: 'nonElevatedValue' },
+        { tone: 'elevated', labelKey: 'elevatedLabel', valueKey: 'elevatedValue' },
+        { tone: 'stage2', labelKey: 'hypertensionLabel', valueKey: 'hypertensionValue' },
+      ]
+    : detailedGuideline === 'aha-acc-2025'
+      ? [
+          { tone: 'normal', labelKey: 'normalLabel', valueKey: 'normalValue' },
+          { tone: 'elevated', labelKey: 'elevatedLabel', valueKey: 'elevatedValue' },
+          { tone: 'stage1', labelKey: 'stage1Label', valueKey: 'stage1Value' },
+          { tone: 'stage2', labelKey: 'stage2Label', valueKey: 'stage2Value' },
+        ]
+      : detailedGuideline === 'ish-2020'
+        ? [
+            { tone: 'normal', labelKey: 'belowThresholdLabel', valueKey: 'belowThresholdValue' },
+            { tone: 'stage2', labelKey: 'hypertensionLabel', valueKey: 'hypertensionValue' },
+          ]
+        : null;
+
+  const renderGuidelineDisclaimer = (text: string) => {
+    const highlightedTerm = t('settings.guidelineInfo.disclaimerHighlight');
+    const termIndex = text.indexOf(highlightedTerm);
+
+    if (termIndex === -1) return text;
+
+    return (
+      <>
+        {text.slice(0, termIndex)}
+        <strong className="guideline-disclaimer-highlight">{highlightedTerm}</strong>
+        {text.slice(termIndex + highlightedTerm.length)}
+      </>
+    );
+  };
 
   const currentWhiteCoatInterval = [3, 5, 10].includes(settings.whiteCoatIntervalMinutes)
     ? settings.whiteCoatIntervalMinutes
@@ -522,11 +559,77 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <X size={20} />
               </button>
             </div>
-            <div className="modal-body settings-info-body">
+            <div className={`modal-body settings-info-body ${infoTopic === 'white-coat' ? 'measurement-guide-body white-coat-info-body' : detailedGuideline ? 'measurement-guide-body guideline-detail-body' : ''}`}>
               {infoTopic === 'white-coat' ? (
                 <>
-                  <p>{t('settings.whiteCoatDesc')}</p>
-                  <p>{t('settings.whiteCoatInfoUsage')}</p>
+                  <div className="settings-subcard measurement-guide-main-card white-coat-info-card">
+                    <ShieldAlert size={22} className="legal-icon-block white-coat-info-icon" />
+                    <p>{t('settings.whiteCoatInfoIntro')}</p>
+                  </div>
+                  <div className="settings-subcard measurement-guide-advice-card white-coat-info-card">
+                    <Repeat2 size={22} className="legal-icon-block white-coat-info-icon" />
+                    <div>
+                      <p>{t('settings.whiteCoatInfoMechanism')}</p>
+                      <p>{t('settings.whiteCoatInfoResult')}</p>
+                    </div>
+                  </div>
+                </>
+              ) : detailedGuideline && detailedGuidelineRanges ? (
+                <>
+                  <div className="settings-subcard measurement-guide-main-card guideline-ranges-card">
+                    <div className="field-label guideline-info-section-title">
+                      <Gauge size={22} className="legal-icon-block" />
+                      <span>{t(`settings.guidelineInfo.${detailedGuideline}.homeIntro`)}</span>
+                    </div>
+                    <ul className="guideline-range-list">
+                      {detailedGuidelineRanges.map((range) => (
+                        <li key={range.labelKey} className={range.tone}>
+                          <span className="guideline-range-dot" aria-hidden="true" />
+                          <span>
+                            <strong>{t(`settings.guidelineInfo.${detailedGuideline}.${range.labelKey}`)}</strong>{' '}
+                            {t(`settings.guidelineInfo.${detailedGuideline}.${range.valueKey}`)}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="settings-subcard measurement-guide-advice-card guideline-target-card">
+                    <Target size={22} className="legal-icon-block" />
+                    {detailedGuideline === 'ish-2020' ? (
+                      <div className="guideline-target-content">
+                        <p>{t('settings.guidelineInfo.ish-2020.targetIntro')}</p>
+                        <ul className="guideline-target-list">
+                          <li>
+                            <strong>{t('settings.guidelineInfo.ish-2020.under65Label')}</strong>{' '}
+                            {t('settings.guidelineInfo.ish-2020.under65Value')}
+                          </li>
+                          <li>
+                            <strong>{t('settings.guidelineInfo.ish-2020.from65Label')}</strong>{' '}
+                            {t('settings.guidelineInfo.ish-2020.from65Value')}
+                          </li>
+                        </ul>
+                        <p className="guideline-fragility-note">
+                          {t('settings.guidelineInfo.ish-2020.fragility')}
+                        </p>
+                      </div>
+                    ) : (
+                      <p>{t(`settings.guidelineInfo.${detailedGuideline}.target`)}</p>
+                    )}
+                  </div>
+                  <div className="settings-info-note guideline-info-disclaimer">
+                    <Info size={18} />
+                    <p>
+                      {renderGuidelineDisclaimer(t(`settings.guidelineInfo.${detailedGuideline}.disclaimer`))}
+                    </p>
+                  </div>
+                  <a
+                    className="settings-info-source"
+                    href={getGuidelineSourceUrl(infoTopic)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {t('settings.guidelineSource')} <ExternalLink size={14} />
+                  </a>
                 </>
               ) : (
                 <>
