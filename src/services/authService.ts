@@ -1,6 +1,13 @@
 import type { AuthStatusResponse, AuthUser, PatientSex } from '../types/bloodPressure';
 import { getSavedServerUrl } from './serverConfigService';
 
+let freshRequestSequence = 0;
+
+function freshApiUrl(path: string): string {
+  freshRequestSequence += 1;
+  return `${path}?fresh=${Date.now()}-${freshRequestSequence}`;
+}
+
 function getApiBase(): string {
   const serverUrl = getSavedServerUrl();
   return serverUrl ? `${serverUrl}/api` : '/api';
@@ -24,9 +31,10 @@ function saveToken(token?: string) {
 export async function getAuthStatus(): Promise<AuthStatusResponse> {
   try {
     const apiBase = getApiBase();
-    const res = await fetch(`${apiBase}/auth/status`, {
+    const res = await fetch(freshApiUrl(`${apiBase}/auth/status`), {
       headers: getAuthHeaders(),
       credentials: 'include',
+      cache: 'no-store',
     });
     if (!res.ok) throw new Error('Error al consultar estado de autenticación');
     return await res.json();
@@ -182,9 +190,10 @@ export async function disableTotp(): Promise<boolean> {
 export async function listUsers(): Promise<AuthUser[]> {
   try {
     const apiBase = getApiBase();
-    const res = await fetch(`${apiBase}/users`, {
+    const res = await fetch(freshApiUrl(`${apiBase}/users`), {
       headers: getAuthHeaders(),
       credentials: 'include',
+      cache: 'no-store',
     });
     if (!res.ok) return [];
     return await res.json();

@@ -1,6 +1,13 @@
 import type { BloodPressureReading, AppSettings } from '../types/bloodPressure';
 import { getSavedServerUrl } from './serverConfigService';
 
+let freshRequestSequence = 0;
+
+function freshApiUrl(path: string): string {
+  freshRequestSequence += 1;
+  return `${path}?fresh=${Date.now()}-${freshRequestSequence}`;
+}
+
 export const DEFAULT_SETTINGS: AppSettings = {
   language: 'es',
   enableWhiteCoatFilter: false,
@@ -40,9 +47,10 @@ function getAuthHeaders(extraHeaders: Record<string, string> = {}): Record<strin
 export async function fetchReadingsFromServer(): Promise<BloodPressureReading[]> {
   try {
     const apiBase = getApiBase();
-    const res = await fetch(`${apiBase}/readings`, {
+    const res = await fetch(freshApiUrl(`${apiBase}/readings`), {
       headers: getAuthHeaders(),
       credentials: 'include',
+      cache: 'no-store',
     });
     if (!res.ok) return [];
     return await res.json();
@@ -186,9 +194,10 @@ export async function importReadingsToServer(imported: Omit<BloodPressureReading
 export async function fetchSettingsFromServer(): Promise<AppSettings> {
   try {
     const apiBase = getApiBase();
-    const res = await fetch(`${apiBase}/settings`, {
+    const res = await fetch(freshApiUrl(`${apiBase}/settings`), {
       headers: getAuthHeaders(),
       credentials: 'include',
+      cache: 'no-store',
     });
     if (!res.ok) return DEFAULT_SETTINGS;
     const data = await res.json();

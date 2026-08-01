@@ -59,6 +59,7 @@ export async function testServerConnection(url: string): Promise<ServerConnectio
     const res = await fetch(`${cleanUrl}/api/auth/status`, {
       headers,
       signal: controller.signal,
+      cache: 'no-store',
     });
     clearTimeout(timeoutId);
 
