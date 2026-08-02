@@ -15,6 +15,7 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
   onConnected,
   canDismiss = false,
 }) => {
+  const appVersion = (import.meta.env.VITE_APP_VERSION || 'v1.6.0').replace(/^v/i, '');
   const [serverIp, setServerIp] = useState<string>(getSavedServerUrl() || '');
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -69,9 +70,9 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
               <Server size={24} />
             </div>
             <div>
-              <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700 }}>Servidor Autoalojado</h2>
+              <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700 }}>Servidor CTA</h2>
               <p style={{ margin: 0, fontSize: '0.88rem', opacity: 0.75 }}>
-                Conexión al servidor
+                Versión {appVersion}
               </p>
             </div>
           </div>
@@ -96,7 +97,7 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
               <input
                 type="text"
                 className="form-input"
-                placeholder="http://192.168.1.50:3000"
+                placeholder="servidor.ejemplo.es o 192.168.1.50:3000"
                 value={serverIp}
                 onChange={(e) => {
                   setServerIp(e.target.value);
@@ -117,9 +118,6 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
                 }}
               />
             </div>
-            <span className="field-help" style={{ marginTop: '8px', fontSize: '0.83rem', display: 'block', opacity: 0.8 }}>
-              Introduce la dirección donde instalaste cta-elrocho-selfhosted
-            </span>
           </div>
 
           {errorMsg && (
