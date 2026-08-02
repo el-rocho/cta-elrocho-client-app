@@ -11,7 +11,7 @@ function freshApiUrl(path: string): string {
 export const DEFAULT_SETTINGS: AppSettings = {
   language: 'es',
   enableWhiteCoatFilter: false,
-  whiteCoatIntervalMinutes: 5,
+  whiteCoatIntervalMinutes: 5, // Valor fijo; se conserva en datos serializados por compatibilidad
   defaultArm: 'left',
   preferredInputMode: 'keyboard',
   guidelineProfile: 'esc-2024',

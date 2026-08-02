@@ -81,10 +81,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     );
   };
 
-  const currentWhiteCoatInterval = [3, 5, 10].includes(settings.whiteCoatIntervalMinutes)
-    ? settings.whiteCoatIntervalMinutes
-    : 5;
-
   const handleLanguageChange = (lang: LanguageOption) => {
     onUpdateSettings({ ...settings, language: lang });
   };
@@ -181,14 +177,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     onUpdateSettings({
       ...settings,
       enableWhiteCoatFilter: !settings.enableWhiteCoatFilter,
-      whiteCoatIntervalMinutes: currentWhiteCoatInterval,
-    });
-  };
-
-  const handleChangeInterval = (minutes: number) => {
-    onUpdateSettings({
-      ...settings,
-      whiteCoatIntervalMinutes: minutes,
+      whiteCoatIntervalMinutes: 5,
     });
   };
 
@@ -411,25 +400,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
             </div>
 
-            {settings.enableWhiteCoatFilter && (
-              <div className="whitecoat-options">
-                <div className="subfield-label">
-                  <span>{t('settings.intervalLabel')}</span>
-                </div>
-                <div className="chip-options-row">
-                  {[3, 5, 10].map((mins) => (
-                    <button
-                      key={mins}
-                      type="button"
-                      className={`chip-select ${currentWhiteCoatInterval === mins ? 'active' : ''}`}
-                      onClick={() => handleChangeInterval(mins)}
-                    >
-                      {t('settings.minutesText', { mins })}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Opción 4: Brazo por defecto */}
