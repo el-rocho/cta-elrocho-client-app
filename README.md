@@ -40,7 +40,7 @@ El proyecto **Control Tensión Arterial** dispone de tres aplicaciones complemen
 - **Exportación e Informes Nativa Android**: Genera PDF y CSV con la guía seleccionada y el desglose de tomas efectivas y descartadas, guardándolos mediante `@capacitor/filesystem` y compartiéndolos con `@capacitor/share`.
 - **Importación MyTherapy**: Detecta el formato y reconstruye las mediciones desde los registros separados de sistólica, diastólica y pulso.
 - **Filtro Opcional de Acomodación**: Agrupa tomas consecutivas y calcula un único resultado efectivo; en sesiones largas puede conservar todas las tomas o una única toma estable.
-- **Gráficos de Tendencias**: Comparación de medias diarias en cuatro semanas y evolución de `4 semanas`, `3 meses`, `6 meses` o `1 año`.
+- **Gráficos de Tendencias**: Comparación de medias diarias en cuatro semanas y evolución de `1 mes`, `3 meses`, `6 meses` o `1 año`.
 - **Soporte Bilingüe y Modo Oscuro**: Interfaz en 🇪🇸 Español y 🇬🇧 Inglés, adaptable a modo oscuro y claro.
 
 Las reglas clínicas completas, incluido el filtro y sus límites, están documentadas en la [matriz clínica de la versión 1.6.0](docs/reglas-clinicas-v1.6.0.md).
