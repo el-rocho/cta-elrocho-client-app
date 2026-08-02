@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, Download, Moon, Sun, Settings, LogOut, Users } from 'lucide-react';
+import { Server, Download, Moon, Sun, Settings, LogOut, Users } from 'lucide-react';
 import { useLanguage } from '../i18n/useLanguage';
 import { AppLogo } from './AppLogo';
 import type { AuthUser } from '../types/bloodPressure';
@@ -35,9 +35,11 @@ export const Header: React.FC<HeaderProps> = ({
         <div>
           <h1 className="brand-title">{t('header.title')}</h1>
           <div className="brand-badge">
-            <ShieldCheck size={13} className="shield-icon" />
+            <Server size={13} className="shield-icon" />
             <span>
-              {currentUser ? `Hola, ${currentUser.name}` : t('header.badgePrivate')} &bull; {appVersion}
+              {t('header.badgeClient')}
+              {currentUser ? ` · ${t('header.userGreeting', { name: currentUser.name })}` : ''}
+              {' '}&bull; {appVersion}
             </span>
           </div>
         </div>
