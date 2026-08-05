@@ -17,6 +17,7 @@ Desinstalar el cliente no borra SQLite, pero elimina esos datos locales y puede 
 1. Consulta la guía de actualización de la versión correspondiente del servidor.
 2. Haz una copia de su directorio persistente `data`.
 3. Lee las notas de la versión del cliente:
+   - [Actualización a 1.6.1-beta.1](docs/actualizaciones/v1.6.1-beta.1.md)
    - [Actualización a 1.6.0](docs/actualizaciones/v1.6.0.md)
    - [Versiones publicadas en GitHub](https://github.com/el-rocho/cta-elrocho-client-app/releases)
 

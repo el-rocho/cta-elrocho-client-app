@@ -445,6 +445,7 @@ export function App() {
           onLogout={handleLogout}
           isDarkMode={isDarkMode}
           onToggleDarkMode={handleToggleDarkMode}
+          serverHealthUrl={serverUrl ? `${serverUrl}/api/health` : ''}
         />
 
         <ReadingForm
@@ -457,12 +458,13 @@ export function App() {
 
         <TrendChart
           sessions={sessions}
-          guidelineProfile={settings.guidelineProfile}
+          settings={settings}
         />
 
         <TrendInsights
           sessions={sessions}
           guidelineProfile={settings.guidelineProfile}
+          settings={settings}
         />
 
         <ReadingList

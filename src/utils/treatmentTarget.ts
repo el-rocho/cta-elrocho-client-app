@@ -1,4 +1,4 @@
-import type { AppSettings, GuidelineProfile } from '../types/bloodPressure';
+import type { AppSettings, GuidelineProfile, LanguageOption } from '../types/bloodPressure';
 
 export type TreatmentTargetStatus = 'within' | 'below' | 'above' | 'mixed';
 
@@ -15,6 +15,17 @@ export interface TreatmentTargetAssessment {
   status: TreatmentTargetStatus;
   target: TreatmentTargetDefinition;
   targetLabel: string;
+}
+
+export function getTreatmentTargetStatusLabel(
+  status: TreatmentTargetStatus,
+  lang: LanguageOption = 'es'
+): string {
+  const isEn = lang === 'en';
+  if (status === 'within') return isEn ? 'Target' : 'Objetivo';
+  if (status === 'below') return isEn ? '↓ Target' : '↓ Objetivo';
+  if (status === 'mixed') return isEn ? '↕ Target' : '↕ Objetivo';
+  return isEn ? '↑ Target' : '↑ Objetivo';
 }
 
 function getPatientAge(settings: AppSettings): number | null {
