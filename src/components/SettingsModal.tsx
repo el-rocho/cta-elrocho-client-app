@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { AppSettings, GuidelineProfile, PatientSex, LanguageOption } from '../types/bloodPressure';
-import { Settings, X, ShieldAlert, ShieldCheck, Clock, Armchair, RotateCcw, User, Trash2, Globe, Server, BookOpenCheck, Target, Info, ExternalLink, Repeat2, Gauge } from 'lucide-react';
+import { Settings, X, ShieldAlert, ShieldCheck, Armchair, RotateCcw, User, Trash2, Globe, Server, BookOpenCheck, Target, Info, ExternalLink, Repeat2, Gauge } from 'lucide-react';
 import { useLanguage } from '../i18n/useLanguage';
 import { calculateAge } from '../utils/pdfGenerator';
 import { FlagES, FlagGB } from './FlagIcons';
@@ -267,8 +267,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     className="settings-info-button"
                     onClick={() => setInfoTopic(profile)}
                     aria-label={`${t('settings.info')} — ${t(labelKey)}`}
+                    title={`${t('settings.info')} — ${t(labelKey)}`}
                   >
-                    <Info size={14} /> {t('settings.info')}
+                    <Info size={15} />
                   </button>
                 </div>
               ))}
@@ -374,20 +375,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
           {/* Opción 3: Filtro de Bata Blanca */}
           <div className="settings-section border-top">
-            <div className="settings-row">
-              <div>
-                <div className="field-label">
-                  <Clock size={22} className="settings-field-icon text-blue" />
-                  <span>{t('settings.whiteCoatTitle')}</span>
+            <div className="settings-row-header white-coat-settings-row">
+              <div className="settings-label-group">
+                <ShieldAlert size={22} className="text-blue settings-field-icon" />
+                <div>
+                  <h3 style={{ fontWeight: 400 }}>{t('settings.whiteCoatTitle')}</h3>
                 </div>
               </div>
+
               <div className="settings-toggle-actions">
                 <button
                   type="button"
                   className="settings-info-button"
                   onClick={() => setInfoTopic('white-coat')}
+                  aria-label={`${t('settings.info')} — ${t('settings.whiteCoatTitle')}`}
+                  title={`${t('settings.info')} — ${t('settings.whiteCoatTitle')}`}
                 >
-                  <Info size={14} /> {t('settings.info')}
+                  <Info size={15} />
                 </button>
                 <label className="toggle-switch">
                   <input
