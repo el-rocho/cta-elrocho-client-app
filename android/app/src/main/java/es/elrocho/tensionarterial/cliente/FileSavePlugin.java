@@ -1,14 +1,15 @@
 package es.elrocho.tensionarterial.cliente;
 
-import android.app.Activity;
-import android.content.Intent;
+import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.net.Uri;
-import androidx.activity.result.ActivityResult;
+import android.os.Build;
+import android.os.Environment;
+import android.provider.MediaStore;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
-import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
@@ -23,39 +24,43 @@ public class FileSavePlugin extends Plugin {
             call.reject("Missing filename or content");
             return;
         }
-
-        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
-        intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.setType("application/json");
-        intent.putExtra(Intent.EXTRA_TITLE, filename);
-        startActivityForResult(call, intent, "saveFileResult");
-    }
-
-    @ActivityCallback
-    private void saveFileResult(PluginCall call, ActivityResult result) {
-        if (call == null) return;
-        Intent data = result.getData();
-        Uri uri = data == null ? null : data.getData();
-        if (result.getResultCode() != Activity.RESULT_OK || uri == null) {
-            JSObject cancelled = new JSObject();
-            cancelled.put("saved", false);
-            call.resolve(cancelled);
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            call.reject("Saving directly to Downloads requires Android 10 or newer");
             return;
         }
 
-        String content = call.getString("content");
-        try (OutputStream stream = getContext().getContentResolver().openOutputStream(uri, "w")) {
-            if (stream == null || content == null) {
-                call.reject("Unable to open the selected file");
+        ContentResolver resolver = getContext().getContentResolver();
+        ContentValues values = new ContentValues();
+        values.put(MediaStore.MediaColumns.DISPLAY_NAME, filename);
+        values.put(MediaStore.MediaColumns.MIME_TYPE, "application/json");
+        values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+        values.put(MediaStore.MediaColumns.IS_PENDING, 1);
+
+        Uri uri = null;
+        try {
+            uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+            if (uri == null) {
+                call.reject("Unable to create the backup in Downloads");
                 return;
             }
-            stream.write(content.getBytes(StandardCharsets.UTF_8));
-            stream.flush();
-            JSObject saved = new JSObject();
-            saved.put("saved", true);
-            call.resolve(saved);
+
+            try (OutputStream stream = resolver.openOutputStream(uri, "w")) {
+                if (stream == null) throw new IllegalStateException("Unable to open the backup file");
+                stream.write(content.getBytes(StandardCharsets.UTF_8));
+                stream.flush();
+            }
+
+            ContentValues completed = new ContentValues();
+            completed.put(MediaStore.MediaColumns.IS_PENDING, 0);
+            resolver.update(uri, completed, null, null);
+
+            JSObject result = new JSObject();
+            result.put("saved", true);
+            result.put("filename", filename);
+            call.resolve(result);
         } catch (Exception error) {
-            call.reject("Unable to save the backup", error);
+            if (uri != null) resolver.delete(uri, null, null);
+            call.reject("Unable to save the backup in Downloads", error);
         }
     }
 }

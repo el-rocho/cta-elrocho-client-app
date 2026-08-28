@@ -247,8 +247,10 @@ export function App() {
           lastBackupTimestamp: now.toISOString(),
           lastFullBackupTimestamp: now.toISOString(),
         });
-        setNotificationMsg(getTranslation(settings.language, 'toast.manualBackupSaved'));
-        setTimeout(() => setNotificationMsg(null), 5000);
+        const downloadsFolder = settings.language === 'en' ? 'Downloads' : 'Descargas';
+        setNotificationMsg(getTranslation(settings.language, 'toast.manualBackupSavedAt', {
+          path: `${downloadsFolder}/${result.filename}`,
+        }));
         return;
       }
       setNotificationMsg({

@@ -19,12 +19,13 @@ export type BackupParseResult =
   | { status: 'invalid'; reason: 'unsupported-version' | 'invalid-content' };
 
 interface FileSavePlugin {
-  saveJsonFile(options: { filename: string; content: string }): Promise<{ saved: boolean }>;
+  saveJsonFile(options: { filename: string; content: string }): Promise<{ saved: boolean; filename: string }>;
 }
 
 const FileSave = registerPlugin<FileSavePlugin>('FileSave');
 
 export interface BackupSaveResult {
+  filename: string;
   mode: 'native' | 'web';
   saved: boolean;
 }
@@ -163,7 +164,7 @@ export async function saveBackup(
 
   if (Capacitor.getPlatform() === 'android') {
     const result = await FileSave.saveJsonFile({ filename, content });
-    return { mode: 'native', saved: result.saved };
+    return { filename: result.filename || filename, mode: 'native', saved: result.saved };
   }
 
   const blob = new Blob([content], { type: 'application/json;charset=utf-8;' });
@@ -175,5 +176,5 @@ export async function saveBackup(
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
-  return { mode: 'web', saved: false };
+  return { filename, mode: 'web', saved: false };
 }
