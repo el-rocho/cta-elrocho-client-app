@@ -15,7 +15,7 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({
   onConnected,
   canDismiss = false,
 }) => {
-  const appVersion = (import.meta.env.VITE_APP_VERSION || 'v1.6.1-beta.2').replace(/^v/i, '');
+  const appVersion = (import.meta.env.VITE_APP_VERSION || 'v1.6.1-beta.3').replace(/^v/i, '');
   const [serverIp, setServerIp] = useState<string>(getSavedServerUrl() || '');
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
