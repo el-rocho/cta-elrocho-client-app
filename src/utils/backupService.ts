@@ -159,7 +159,7 @@ export async function saveBackup(
   now = new Date()
 ): Promise<BackupSaveResult> {
   const snapshot = createBackupSnapshot(readings, settings, now.toISOString());
-  const filename = `control_tension_backup_${formatFilenameTimestamp(now)}.cta-backup.json`;
+  const filename = `cta-backup-${formatFilenameTimestamp(now)}.json`;
   const content = serializeBackup(snapshot);
 
   if (Capacitor.getPlatform() === 'android') {

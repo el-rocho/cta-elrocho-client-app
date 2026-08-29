@@ -198,6 +198,7 @@ export function App() {
       setNotificationMsg({
         message: getTranslation(settings.language, 'toast.backupDue'),
         actionLabel: getTranslation(settings.language, 'toast.openBackups'),
+        variant: 'soft-blue',
         onAction: () => setIsExportModalOpen(true),
       });
     };
@@ -248,9 +249,11 @@ export function App() {
           lastFullBackupTimestamp: now.toISOString(),
         });
         const downloadsFolder = settings.language === 'en' ? 'Downloads' : 'Descargas';
-        setNotificationMsg(getTranslation(settings.language, 'toast.manualBackupSavedAt', {
-          path: `${downloadsFolder}/${result.filename}`,
-        }));
+        setNotificationMsg({
+          message: getTranslation(settings.language, 'toast.manualBackupSavedAt', { path: downloadsFolder }),
+          detail: result.filename,
+          variant: 'soft-blue',
+        });
         return;
       }
       setNotificationMsg({
@@ -422,8 +425,8 @@ export function App() {
         )}
 
         {notificationMsg && (
-          <div className={`toast-modal-overlay ${typeof notificationMsg === 'object' && notificationMsg.variant === 'neutral' ? 'neutral' : ''}`} onClick={() => setNotificationMsg(null)}>
-            <div className={`toast-notification ${typeof notificationMsg === 'object' && notificationMsg.variant === 'neutral' ? 'neutral' : ''}`} onClick={(e) => e.stopPropagation()}>
+          <div className={`toast-modal-overlay ${typeof notificationMsg === 'object' ? notificationMsg.variant ?? '' : ''}`} onClick={() => setNotificationMsg(null)}>
+            <div className={`toast-notification ${typeof notificationMsg === 'object' ? notificationMsg.variant ?? '' : ''}`} onClick={(e) => e.stopPropagation()}>
               <div className="toast-top-row">
                 {(typeof notificationMsg === 'string' || notificationMsg.message) && (
                   <span className="toast-message-text">
@@ -441,6 +444,10 @@ export function App() {
                   </button>
                 )}
               </div>
+
+              {typeof notificationMsg === 'object' && notificationMsg.detail && (
+                <span className="toast-detail-text">{notificationMsg.detail}</span>
+              )}
 
               {typeof notificationMsg === 'object' && notificationMsg.actionLabel && notificationMsg.onAction && (
                 <div className="toast-bottom-row">
