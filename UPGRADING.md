@@ -21,11 +21,17 @@ Desinstalar el cliente no borra SQLite, pero elimina esos datos locales y puede 
    - [Actualización a 1.6.0](docs/actualizaciones/v1.6.0.md)
    - [Versiones publicadas en GitHub](https://github.com/el-rocho/cta-elrocho-client-app/releases)
 
+## Aviso especial para el cliente Android 1.6.1
+
+Para instalar el APK `v1.6.1` es necesario desinstalar primero la versión anterior. Android y Obtainium pueden mostrar el error **Conflict** si se intenta actualizar directamente debido a un cambio en el certificado de firma del APK.
+
+Antes de desinstalar, anota la dirección del servidor. Después instala `v1.6.1`, configura de nuevo esa dirección e inicia sesión. Se eliminarán la configuración y la sesión locales, pero no las cuentas ni las mediciones almacenadas en el servidor. La PWA no está afectada.
+
 ## Orden recomendado
 
 1. Actualiza el servidor autoalojado.
 2. Comprueba desde el navegador que inicia correctamente y muestra el historial.
-3. Instala el nuevo APK cliente encima del anterior mediante Obtainium o GitHub Releases.
+3. Sigue las notas específicas de la versión para instalar el nuevo APK mediante Obtainium o GitHub Releases. Para `v1.6.1`, desinstala primero la versión anterior como se indica arriba.
 4. Comprueba la dirección del servidor, la sesión y las mediciones.
 
 El servidor y el cliente deben mantenerse en versiones compatibles. No utilices de forma permanente un cliente nuevo con un servidor antiguo: las nuevas rutas, campos o validaciones pueden no estar disponibles.
