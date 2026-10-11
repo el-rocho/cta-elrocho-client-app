@@ -13,6 +13,7 @@ import { exportToCSV } from '../utils/exportCsv';
 import { downloadPDFReport, calculateAge } from '../utils/pdfGenerator';
 import { analyzeCSVImport, type CSVImportResult } from '../utils/importCsv';
 import { parseBackupContent, type AppBackupSnapshot } from '../utils/backupService';
+import type { BackupMergeCounts, BackupMergePreview } from '../services/backupMergeService';
 import {
   AlertCircle,
   Calendar,
@@ -51,7 +52,8 @@ interface ExportModalProps {
   settings: AppSettings;
   currentUser?: AuthUser | null;
   onImportReadings: (readings: Omit<BloodPressureReading, 'id'>[]) => number | Promise<number>;
-  onRestoreBackup: (snapshot: AppBackupSnapshot, mode: 'merge' | 'replace') => number | Promise<number>;
+  onPreviewBackupMerge: (snapshot: AppBackupSnapshot) => Promise<BackupMergePreview>;
+  onRestoreBackup: (snapshot: AppBackupSnapshot, mode: 'merge' | 'replace', previewToken?: string) => number | BackupMergeCounts | Promise<number | BackupMergeCounts>;
   onUpdateSettings: (settings: AppSettings) => void;
   onTriggerManualBackup: () => void | Promise<void>;
   onNotify?: (toast: string | ToastNotification) => void;
@@ -65,6 +67,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   settings,
   currentUser,
   onImportReadings,
+  onPreviewBackupMerge,
   onRestoreBackup,
   onUpdateSettings,
   onTriggerManualBackup,
@@ -77,6 +80,11 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   const [activeTab, setActiveTab] = useState<DataTab>('backup');
   const [importStatus, setImportStatus] = useState<{ kind: 'success' | 'error'; message: string } | null>(null);
   const [pendingImport, setPendingImport] = useState<PendingImport | null>(null);
+  const [mergePreview, setMergePreview] = useState<BackupMergePreview | null>(null);
+  const [previewBusy, setPreviewBusy] = useState(false);
+  const [restoreBusy, setRestoreBusy] = useState(false);
+  const restoreBusyRef = React.useRef(false);
+  const previewSequence = React.useRef(0);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
@@ -155,19 +163,24 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (restoreBusyRef.current) return;
     const file = event.target.files?.[0];
     if (!file) return;
     setImportStatus(null);
     setPendingImport(null);
+    setMergePreview(null);
+    previewSequence.current += 1;
 
     const reader = new FileReader();
     reader.onload = (loadEvent) => {
+      if (restoreBusyRef.current) return;
       const content = loadEvent.target?.result;
       if (typeof content !== 'string') return;
 
       const backupResult = parseBackupContent(content);
       if (backupResult.status === 'valid') {
         setPendingImport({ kind: 'backup', snapshot: backupResult.snapshot });
+        void runPreview(backupResult.snapshot);
       } else if (backupResult.status === 'invalid') {
         setImportStatus({
           kind: 'error',
@@ -199,20 +212,64 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     setPendingImport(null);
   };
 
-  const confirmBackupRestore = async (mode: 'merge' | 'replace') => {
-    if (!pendingImport || pendingImport.kind !== 'backup') return;
-    if (mode === 'replace' && !window.confirm(t('data.replaceConfirm'))) return;
-    const restoredCount = await onRestoreBackup(pendingImport.snapshot, mode);
-    setImportStatus({
-      kind: 'success',
-      message: mode === 'replace'
-        ? t('data.restoreReplaceSuccess', { count: restoredCount })
-        : t('data.restoreMergeSuccess', { count: restoredCount }),
-    });
-    setPendingImport(null);
+  const runPreview = async (snapshot: AppBackupSnapshot): Promise<BackupMergePreview | null> => {
+    const sequence = ++previewSequence.current;
+    setPreviewBusy(true);
+    try {
+      const preview = await onPreviewBackupMerge(snapshot);
+      if (sequence !== previewSequence.current) return null;
+      setMergePreview(preview);
+      return preview;
+    } catch {
+      // A failed/stale token cannot authorize a commit. Keep the file for a fresh preview.
+      if (sequence === previewSequence.current) {
+        setMergePreview(null);
+        setImportStatus({ kind: 'error', message: t('data.mergePreviewError') });
+      }
+      return null;
+    } finally {
+      if (sequence === previewSequence.current) setPreviewBusy(false);
+    }
   };
 
-  const openFilePicker = () => fileInputRef.current?.click();
+  const confirmBackupRestore = async (mode: 'merge' | 'replace', previewToken = mergePreview?.previewToken) => {
+    if (!pendingImport || pendingImport.kind !== 'backup') return;
+    if (previewBusy || restoreBusyRef.current || (mode === 'merge' && !previewToken)) return;
+    if (mode === 'replace' && !window.confirm(t('data.replaceConfirm'))) return;
+    restoreBusyRef.current = true;
+    setRestoreBusy(true);
+    try {
+      const restored = await onRestoreBackup(pendingImport.snapshot, mode, previewToken);
+      setImportStatus({
+        kind: 'success',
+        message: mode === 'replace'
+          ? t('data.restoreReplaceSuccess', { count: restored as number })
+          : t('data.restoreMergeSuccess', { ...(restored as BackupMergeCounts) }),
+      });
+      setPendingImport(null);
+      setMergePreview(null);
+    } catch {
+      // A stale/failed token cannot authorize the commit. Keep the file and recompute a fresh preview.
+      setMergePreview(null);
+      setImportStatus({ kind: 'error', message: t('data.mergePreviewError') });
+      if (mode === 'merge') void runPreview(pendingImport.snapshot);
+    } finally {
+      restoreBusyRef.current = false;
+      setRestoreBusy(false);
+    }
+  };
+
+  const applyMerge = async () => {
+    if (!pendingImport || pendingImport.kind !== 'backup') return;
+    if (previewBusy || restoreBusyRef.current) return;
+    if (!mergePreview) {
+      await runPreview(pendingImport.snapshot);
+      return; // The new counts must be visible before a separate user action writes.
+    }
+    await confirmBackupRestore('merge', mergePreview.previewToken);
+  };
+
+  const openFilePicker = () => { if (!restoreBusyRef.current) fileInputRef.current?.click(); };
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -295,6 +352,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                   ref={fileInputRef}
                   accept=".csv,.json,.cta-backup.json,text/csv,application/json"
                   onChange={handleFileChange}
+                  disabled={restoreBusy}
                   style={{ display: 'none' }}
                 />
               </div>
@@ -318,19 +376,51 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                       <span>{t('data.backupCreatedAt')}</span>
                     </div>
                   </div>
-                  <div className="import-preview-note">
-                    <CheckCircle2 size={17} />
-                    <span>{t('data.nativeBackupNotice')}</span>
-                  </div>
+                  {mergePreview && (
+                    <div className="import-summary-grid merge-counts-grid">
+                      <div className="import-summary-item">
+                        <strong>{mergePreview.addedCount}</strong>
+                        <span>{t('data.mergeAddedLabel')}</span>
+                      </div>
+                      <div className="import-summary-item">
+                        <strong>{mergePreview.duplicateCount}</strong>
+                        <span>{t('data.mergeDuplicatesLabel')}</span>
+                      </div>
+                      <div className={`import-summary-item${mergePreview.conflictCount > 0 ? ' is-conflict' : ''}`}>
+                        <strong>{mergePreview.conflictCount}</strong>
+                        <span>{t('data.mergeConflictsLabel')}</span>
+                      </div>
+                    </div>
+                  )}
+                  {previewBusy && !mergePreview ? (
+                    <div className="import-preview-note checking" role="status">
+                      <Clock3 size={17} />
+                      <span>{t('data.mergePreviewChecking')}</span>
+                    </div>
+                  ) : mergePreview ? (
+                    <div className={`import-preview-note ${mergePreview.conflictCount > 0 ? 'merge-conflicts' : 'merge-ok'}`} role="status">
+                      {mergePreview.conflictCount > 0 ? <AlertCircle size={17} /> : <CheckCircle2 size={17} />}
+                      <span>
+                        {mergePreview.conflictCount > 0
+                          ? <strong>{t('data.mergeConflictNotice', { conflictCount: mergePreview.conflictCount })}</strong>
+                          : t('data.mergeNoConflictNotice', { addedCount: mergePreview.addedCount, duplicateCount: mergePreview.duplicateCount })}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="import-preview-note">
+                      <CheckCircle2 size={17} />
+                      <span>{t('data.nativeBackupNotice')}</span>
+                    </div>
+                  )}
                   <div className="import-preview-actions restore-actions">
-                    <button type="button" className="btn-import-confirm" onClick={() => confirmBackupRestore('merge')}>
+                    <button type="button" className="btn-import-confirm" disabled={previewBusy || restoreBusy} onClick={applyMerge}>
                       <CheckCircle2 size={18} />
                       {t('data.mergeBackup')}
                     </button>
-                    <button type="button" className="btn-replace-data" onClick={() => confirmBackupRestore('replace')}>
+                    <button type="button" className="btn-replace-data" disabled={previewBusy || restoreBusy} onClick={() => confirmBackupRestore('replace')}>
                       {t('data.replaceData')}
                     </button>
-                    <button type="button" className="btn-import-reselect" onClick={openFilePicker}>
+                    <button type="button" className="btn-import-reselect" disabled={restoreBusy} onClick={openFilePicker}>
                       {t('data.selectAnotherFile')}
                     </button>
                   </div>
@@ -400,7 +490,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                       <CheckCircle2 size={18} />
                       {t('export.confirmImport')}
                     </button>
-                    <button type="button" className="btn-import-reselect" onClick={openFilePicker}>
+                    <button type="button" className="btn-import-reselect" disabled={restoreBusy} onClick={openFilePicker}>
                       {t('data.selectAnotherFile')}
                     </button>
                   </div>

@@ -19,6 +19,7 @@ import { getSavedServerUrl, testServerConnection } from './services/serverConfig
 import { processReadingsIntoSessions } from './utils/whiteCoatAlgorithm';
 import { isBackupDue } from './utils/backupScheduler';
 import { saveBackup, type AppBackupSnapshot } from './utils/backupService';
+import { previewBackupMerge, restoreBackupMerge } from './services/backupMergeService';
 import { Header } from './components/Header';
 import { ReadingForm } from './components/ReadingForm';
 import { TrendChart } from './components/TrendChart';
@@ -275,9 +276,9 @@ export function App() {
     }
   };
 
-  const handleRestoreBackup = async (snapshot: AppBackupSnapshot, mode: 'merge' | 'replace') => {
-    const imported = snapshot.readings.map(({ id: _id, ...reading }) => reading);
+  const handleRestoreBackup = async (snapshot: AppBackupSnapshot, mode: 'merge' | 'replace', previewToken?: string) => {
     if (mode === 'replace') {
+      const imported = snapshot.readings.map(({ id: _id, ...reading }) => reading);
       const cleared = await clearAllReadingsOnServer();
       if (!cleared) return 0;
       const result = await importReadingsToServer(imported);
@@ -291,9 +292,10 @@ export function App() {
       return result.readings.length;
     }
 
-    const result = await importReadingsToServer(imported);
+    if (!previewToken) throw new Error('Missing merge preview token');
+    const result = await restoreBackupMerge(snapshot, previewToken);
     setReadings(result.readings);
-    return result.addedCount;
+    return { addedCount: result.addedCount, duplicateCount: result.duplicateCount, conflictCount: result.conflictCount };
   };
 
   const handleResetDemoData = async () => {
@@ -534,6 +536,7 @@ export function App() {
           settings={settings}
           currentUser={currentUser}
           onImportReadings={handleImportReadings}
+          onPreviewBackupMerge={previewBackupMerge}
           onRestoreBackup={handleRestoreBackup}
           onUpdateSettings={handleUpdateSettings}
           onTriggerManualBackup={handleTriggerManualBackup}
