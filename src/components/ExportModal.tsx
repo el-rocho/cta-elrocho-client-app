@@ -14,6 +14,7 @@ import { downloadPDFReport, calculateAge } from '../utils/pdfGenerator';
 import { analyzeCSVImport, type CSVImportResult } from '../utils/importCsv';
 import { parseBackupContent, type AppBackupSnapshot } from '../utils/backupService';
 import type { BackupMergeCounts, BackupMergePreview } from '../services/backupMergeService';
+import { StorageServiceError } from '../services/storageService';
 import {
   AlertCircle,
   Calendar,
@@ -125,6 +126,13 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     onUpdateSettings({ ...settings, backupFrequency });
   };
 
+  // Un 404/405 en las rutas de copias significa que el servidor es anterior a
+  // estas operaciones: mostramos un aviso accionable en lugar del genérico.
+  const storageErrorMessage = (error: unknown, fallback: string): string =>
+    error instanceof StorageServiceError && error.kind === 'unsupported-server'
+      ? t('toast.serverUnsupported')
+      : fallback;
+
   const handleExportCSV = () => {
     const filename = exportToCSV(sessions, getCurrentRange(), 'tension_arterial_informe', getExportOptions(), language);
     onClose();
@@ -207,9 +215,16 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 
   const confirmCSVImport = async () => {
     if (!pendingImport || pendingImport.kind !== 'csv') return;
-    const addedCount = await onImportReadings(pendingImport.result.readings);
-    setImportStatus({ kind: 'success', message: t('toast.importedCount', { count: addedCount }) });
-    setPendingImport(null);
+    setRestoreBusy(true);
+    try {
+      const addedCount = await onImportReadings(pendingImport.result.readings);
+      setImportStatus({ kind: 'success', message: t('toast.importedCount', { count: addedCount }) });
+      setPendingImport(null);
+    } catch {
+      setImportStatus({ kind: 'error', message: t('toast.storageError') });
+    } finally {
+      setRestoreBusy(false);
+    }
   };
 
   const runPreview = async (snapshot: AppBackupSnapshot): Promise<BackupMergePreview | null> => {
@@ -220,11 +235,11 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       if (sequence !== previewSequence.current) return null;
       setMergePreview(preview);
       return preview;
-    } catch {
+    } catch (error) {
       // A failed/stale token cannot authorize a commit. Keep the file for a fresh preview.
       if (sequence === previewSequence.current) {
         setMergePreview(null);
-        setImportStatus({ kind: 'error', message: t('data.mergePreviewError') });
+        setImportStatus({ kind: 'error', message: storageErrorMessage(error, t('data.mergePreviewError')) });
       }
       return null;
     } finally {
@@ -240,6 +255,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     setRestoreBusy(true);
     try {
       const restored = await onRestoreBackup(pendingImport.snapshot, mode, previewToken);
+      if (mode === 'replace' && (!Number.isSafeInteger(restored) || (restored as number) <= 0)) {
+        throw new Error('Invalid replacement result');
+      }
       setImportStatus({
         kind: 'success',
         message: mode === 'replace'
@@ -248,10 +266,10 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       });
       setPendingImport(null);
       setMergePreview(null);
-    } catch {
+    } catch (error) {
       // A stale/failed token cannot authorize the commit. Keep the file and recompute a fresh preview.
       setMergePreview(null);
-      setImportStatus({ kind: 'error', message: t('data.mergePreviewError') });
+      setImportStatus({ kind: 'error', message: storageErrorMessage(error, mode === 'merge' ? t('data.mergePreviewError') : t('toast.storageError')) });
       if (mode === 'merge') void runPreview(pendingImport.snapshot);
     } finally {
       restoreBusyRef.current = false;
@@ -486,7 +504,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                     </div>
                   )}
                   <div className="import-preview-actions">
-                    <button type="button" className="btn-import-confirm" onClick={confirmCSVImport}>
+                    <button type="button" className="btn-import-confirm" onClick={confirmCSVImport} disabled={restoreBusy}>
                       <CheckCircle2 size={18} />
                       {t('export.confirmImport')}
                     </button>

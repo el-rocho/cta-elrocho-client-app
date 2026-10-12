@@ -12,6 +12,7 @@ import {
   importReadingsToServer,
   fetchSettingsFromServer,
   saveSettingsToServer,
+  StorageServiceError,
   DEFAULT_SETTINGS,
 } from './services/storageService';
 import { getAuthStatus, logout } from './services/authService';
@@ -19,7 +20,7 @@ import { getSavedServerUrl, testServerConnection } from './services/serverConfig
 import { processReadingsIntoSessions } from './utils/whiteCoatAlgorithm';
 import { isBackupDue } from './utils/backupScheduler';
 import { saveBackup, type AppBackupSnapshot } from './utils/backupService';
-import { previewBackupMerge, restoreBackupMerge } from './services/backupMergeService';
+import { previewBackupMerge, restoreBackupMerge, restoreBackupReplace } from './services/backupMergeService';
 import { Header } from './components/Header';
 import { ReadingForm } from './components/ReadingForm';
 import { TrendChart } from './components/TrendChart';
@@ -59,10 +60,44 @@ export function App() {
   const backupReminderKeyRef = useRef<string | null>(null);
   const dataLoadVersionRef = useRef(0);
 
-  const handleUpdateSettings = useCallback(async (newSettings: AppSettings) => {
-    setSettings(newSettings);
+  const showStorageError = useCallback((error: unknown) => {
+    // Solo un 401 real (sesión caducada/revocada) revoca la sesión. Un 403
+    // (p. ej. petición de import/restaurar sin token explícito) NO es una sesión
+    // caducada y nunca debe provocar un cierre de sesión falso. Un 404/405 en las
+    // rutas de copias significa un servidor desactualizado: tampoco es la sesión.
+    const sessionExpired = error instanceof StorageServiceError && error.kind === 'unauthorized';
+    // Servidor anterior sin las rutas de combinación/restauración de copias: se
+    // avisa de forma específica y accionable en lugar del error genérico.
+    const serverUnsupported = error instanceof StorageServiceError && error.kind === 'unsupported-server';
+    if (sessionExpired) {
+      ++dataLoadVersionRef.current;
+      localStorage.removeItem('cta_session_token');
+      setCurrentUser(null);
+      setReadings([]);
+      setSettings(DEFAULT_SETTINGS);
+      void logout();
+    }
+    setNotificationMsg(getTranslation(settings.language, sessionExpired
+      ? 'toast.sessionExpired'
+      : serverUnsupported
+        ? 'toast.serverUnsupported'
+        : 'toast.storageError'));
+  }, [settings.language]);
+
+  const persistSettings = useCallback(async (newSettings: AppSettings) => {
     await saveSettingsToServer(newSettings);
+    setSettings(newSettings);
   }, []);
+
+  const handleUpdateSettings = useCallback(async (newSettings: AppSettings): Promise<boolean> => {
+    try {
+      await persistSettings(newSettings);
+      return true;
+    } catch (error) {
+      showStorageError(error);
+      return false;
+    }
+  }, [persistSettings, showStorageError]);
 
   const handleMedicationContextChange = async (
     takesMedication: boolean,
@@ -72,28 +107,24 @@ export function App() {
       ...settings,
       takesAntihypertensiveMedication: takesMedication,
     };
-    if (recalculateHistory) {
-      const updated = await updateMedicationContextForAllReadings(takesMedication);
-      if (!updated) {
-        setNotificationMsg(getTranslation(settings.language, 'settings.medicationChangeFailed'));
-        return false;
+    try {
+      if (recalculateHistory) {
+        await updateMedicationContextForAllReadings(takesMedication);
+        setSettings(updatedSettings);
+        setReadings((current) =>
+          current.map((reading) => ({
+            ...reading,
+            takesAntihypertensiveMedication: takesMedication,
+          }))
+        );
+        return true;
       }
-      setSettings(updatedSettings);
-      setReadings((current) =>
-        current.map((reading) => ({
-          ...reading,
-          takesAntihypertensiveMedication: takesMedication,
-        }))
-      );
+      await persistSettings(updatedSettings);
       return true;
-    }
-    const saved = await saveSettingsToServer(updatedSettings);
-    if (!saved) {
-      setNotificationMsg(getTranslation(settings.language, 'settings.medicationChangeFailed'));
+    } catch (error) {
+      showStorageError(error);
       return false;
     }
-    setSettings(updatedSettings);
-    return true;
   };
 
   const { sessions } = useMemo(
@@ -123,10 +154,12 @@ export function App() {
       setHasAdmin(status.hasAdmin);
       if (status.user) {
         const loadVersion = ++dataLoadVersionRef.current;
-        setReadings([]);
-        setSettings(DEFAULT_SETTINGS);
         setCurrentUser(status.user);
-        await loadUserData(loadVersion);
+        try {
+          await loadUserData(loadVersion);
+        } catch (error) {
+          showStorageError(error);
+        }
       } else {
         ++dataLoadVersionRef.current;
         setCurrentUser(null);
@@ -157,10 +190,12 @@ export function App() {
     setHasAdmin(status.hasAdmin);
     if (status.user) {
       const loadVersion = ++dataLoadVersionRef.current;
-      setReadings([]);
-      setSettings(DEFAULT_SETTINGS);
       setCurrentUser(status.user);
-      await loadUserData(loadVersion);
+      try {
+        await loadUserData(loadVersion);
+      } catch (error) {
+        showStorageError(error);
+      }
     } else {
       ++dataLoadVersionRef.current;
       setCurrentUser(null);
@@ -172,11 +207,13 @@ export function App() {
 
   const handleLoginSuccess = async (user: AuthUser) => {
     const loadVersion = ++dataLoadVersionRef.current;
-    setReadings([]);
-    setSettings(DEFAULT_SETTINGS);
     setCurrentUser(user);
     setHasAdmin(true);
-    await loadUserData(loadVersion);
+    try {
+      await loadUserData(loadVersion);
+    } catch (error) {
+      showStorageError(error);
+    }
   };
 
   const handleLogout = async () => {
@@ -219,11 +256,14 @@ export function App() {
   };
 
   const handleImportReadings = async (imported: Omit<BloodPressureReading, 'id'>[]) => {
-    const result = await importReadingsToServer(imported);
-    setReadings(result.readings);
-    setNotificationMsg(getTranslation(settings.language, 'toast.importedCount', { count: result.addedCount }));
-    setTimeout(() => setNotificationMsg(null), 5000);
-    return result.addedCount;
+    try {
+      const result = await importReadingsToServer(imported);
+      setReadings(result.readings);
+      return result.addedCount;
+    } catch (error) {
+      showStorageError(error);
+      throw error;
+    }
   };
 
   const handleTriggerManualBackup = async () => {
@@ -241,11 +281,12 @@ export function App() {
           return;
         }
 
-        await handleUpdateSettings({
+        const saved = await handleUpdateSettings({
           ...settings,
           lastBackupTimestamp: now.toISOString(),
           lastFullBackupTimestamp: now.toISOString(),
         });
+        if (!saved) return;
         const downloadsFolder = settings.language === 'en' ? 'Downloads' : 'Descargas';
         setNotificationMsg({
           message: getTranslation(settings.language, 'toast.manualBackupSavedAt', { path: downloadsFolder }),
@@ -258,13 +299,14 @@ export function App() {
         actionLabel: getTranslation(settings.language, 'toast.confirmBackupSaved'),
         cancelLabel: getTranslation(settings.language, 'toast.backupCancelledAction'),
         variant: 'neutral',
-        onAction: () => {
+        onAction: async () => {
           const updatedSettings = {
             ...settings,
             lastBackupTimestamp: now.toISOString(),
             lastFullBackupTimestamp: now.toISOString(),
           };
-          handleUpdateSettings(updatedSettings);
+          const saved = await handleUpdateSettings(updatedSettings);
+          if (!saved) return;
           setNotificationMsg(getTranslation(settings.language, 'toast.manualBackupSuccess'));
           setTimeout(() => setNotificationMsg(null), 5000);
         },
@@ -278,43 +320,67 @@ export function App() {
 
   const handleRestoreBackup = async (snapshot: AppBackupSnapshot, mode: 'merge' | 'replace', previewToken?: string) => {
     if (mode === 'replace') {
-      const imported = snapshot.readings.map(({ id: _id, ...reading }) => reading);
-      const cleared = await clearAllReadingsOnServer();
-      if (!cleared) return 0;
-      const result = await importReadingsToServer(imported);
-      const restoredSettings = {
-        ...snapshot.settings,
-        lastBackupTimestamp: snapshot.createdAt,
-        lastFullBackupTimestamp: snapshot.createdAt,
-      };
-      await handleUpdateSettings(restoredSettings);
-      setReadings(result.readings);
-      return result.readings.length;
+      if (snapshot.readings.length === 0) throw new Error('Cannot report an empty replacement as restored');
+      try {
+        // Una única llamada atómica: el servidor valida la copia y solo entonces
+        // reemplaza el historial dentro de una transacción. Así nunca se destruyen
+        // las lecturas actuales antes de tener validada la importación.
+        const result = await restoreBackupReplace(snapshot);
+        if (result.readings.length === 0) throw new Error('Replacement returned no restored readings');
+        setSettings(result.settings);
+        setReadings(result.readings);
+        return result.readings.length;
+      } catch (error) {
+        showStorageError(error);
+        throw error;
+      }
     }
 
     if (!previewToken) throw new Error('Missing merge preview token');
-    const result = await restoreBackupMerge(snapshot, previewToken);
-    setReadings(result.readings);
-    return { addedCount: result.addedCount, duplicateCount: result.duplicateCount, conflictCount: result.conflictCount };
+    try {
+      const result = await restoreBackupMerge(snapshot, previewToken);
+      setReadings(result.readings);
+      return { addedCount: result.addedCount, duplicateCount: result.duplicateCount, conflictCount: result.conflictCount };
+    } catch (error) {
+      showStorageError(error);
+      throw error;
+    }
+  };
+
+  const handlePreviewBackupMerge = async (snapshot: AppBackupSnapshot) => {
+    try {
+      return await previewBackupMerge(snapshot);
+    } catch (error) {
+      showStorageError(error);
+      throw error;
+    }
   };
 
   const handleResetDemoData = async () => {
     if (window.confirm(getTranslation(settings.language, 'toast.resetDemoConfirm'))) {
-      const demoReadings = await resetDemoDataOnServer();
-      setReadings(demoReadings);
-      setIsSettingsModalOpen(false);
-      setNotificationMsg(getTranslation(settings.language, 'toast.resetDemoSuccess'));
-      setTimeout(() => setNotificationMsg(null), 4000);
+      try {
+        const demoReadings = await resetDemoDataOnServer();
+        setReadings(demoReadings);
+        setIsSettingsModalOpen(false);
+        setNotificationMsg(getTranslation(settings.language, 'toast.resetDemoSuccess'));
+        setTimeout(() => setNotificationMsg(null), 4000);
+      } catch (error) {
+        showStorageError(error);
+      }
     }
   };
 
   const handleClearAllData = async () => {
     if (window.confirm(getTranslation(settings.language, 'toast.clearAllConfirm'))) {
-      await clearAllReadingsOnServer();
-      setReadings([]);
-      setIsSettingsModalOpen(false);
-      setNotificationMsg(getTranslation(settings.language, 'toast.clearAllSuccess'));
-      setTimeout(() => setNotificationMsg(null), 4000);
+      try {
+        await clearAllReadingsOnServer();
+        setReadings([]);
+        setIsSettingsModalOpen(false);
+        setNotificationMsg(getTranslation(settings.language, 'toast.clearAllSuccess'));
+        setTimeout(() => setNotificationMsg(null), 4000);
+      } catch (error) {
+        showStorageError(error);
+      }
     }
   };
 
@@ -336,44 +402,63 @@ export function App() {
     notes?: string;
     pulsePressureWarningConfirmed?: boolean;
   }) => {
-    const created = await addReadingToServer({
-      timestamp: new Date().toISOString(),
-      systolic: data.systolic,
-      diastolic: data.diastolic,
-      heartRate: data.heartRate,
-      arm: data.arm,
-      notes: data.notes,
-      pulsePressureWarningConfirmed: data.pulsePressureWarningConfirmed,
-      takesAntihypertensiveMedication: settings.takesAntihypertensiveMedication,
-    });
-    if (created) {
+    try {
+      const created = await addReadingToServer({
+        timestamp: new Date().toISOString(),
+        systolic: data.systolic,
+        diastolic: data.diastolic,
+        heartRate: data.heartRate,
+        arm: data.arm,
+        notes: data.notes,
+        pulsePressureWarningConfirmed: data.pulsePressureWarningConfirmed,
+        takesAntihypertensiveMedication: settings.takesAntihypertensiveMedication,
+      });
       setReadings((prev) => [created, ...prev]);
+    } catch (error) {
+      showStorageError(error);
+      throw error;
     }
   };
 
   const handleDeleteSession = async (sessionToDelete: any) => {
     if (window.confirm(getTranslation(settings.language, 'list.deleteSessionConfirm'))) {
       const ids = sessionToDelete.readings.map((r: any) => r.id);
-      const ok = await deleteSessionFromServer(ids);
-      if (ok) {
+      try {
+        await deleteSessionFromServer(ids);
         setReadings((prev) => prev.filter((r) => !ids.includes(r.id)));
+      } catch (error) {
+        showStorageError(error);
       }
+    }
+  };
+
+  const deleteSingleReading = async (readingId: string) => {
+    try {
+      await deleteReadingFromServer(readingId);
+      setReadings((prev) => prev.filter((r) => r.id !== readingId));
+    } catch (error) {
+      showStorageError(error);
+      throw error;
     }
   };
 
   const handleDeleteSingleReading = async (readingId: string) => {
     if (window.confirm(getTranslation(settings.language, 'list.deleteReadingConfirm'))) {
-      const ok = await deleteReadingFromServer(readingId);
-      if (ok) {
-        setReadings((prev) => prev.filter((r) => r.id !== readingId));
+      try {
+        await deleteSingleReading(readingId);
+      } catch {
+        // The list stays unchanged; deleteSingleReading already reported the failure.
       }
     }
   };
 
   const handleSaveReadingEdit = async (updatedReading: BloodPressureReading) => {
-    const ok = await updateReadingOnServer(updatedReading);
-    if (ok) {
+    try {
+      await updateReadingOnServer(updatedReading);
       setReadings((prev) => prev.map((r) => (r.id === updatedReading.id ? updatedReading : r)));
+    } catch (error) {
+      showStorageError(error);
+      throw error;
     }
   };
 
@@ -524,7 +609,7 @@ export function App() {
           onUpdateInputMode={handleUpdateInputMode}
           onClose={() => setReadingToEdit(null)}
           onSaveReading={handleSaveReadingEdit}
-          onDeleteReading={handleDeleteSingleReading}
+          onDeleteReading={deleteSingleReading}
           readings={readings}
         />
 
@@ -536,7 +621,7 @@ export function App() {
           settings={settings}
           currentUser={currentUser}
           onImportReadings={handleImportReadings}
-          onPreviewBackupMerge={previewBackupMerge}
+          onPreviewBackupMerge={handlePreviewBackupMerge}
           onRestoreBackup={handleRestoreBackup}
           onUpdateSettings={handleUpdateSettings}
           onTriggerManualBackup={handleTriggerManualBackup}

@@ -61,7 +61,7 @@ export function processReadingsIntoSessions(
       averageHeartRate: r.heartRate,
       discardedCount: 0,
       arm: r.arm,
-      notes: r.notes,
+      notes: r.notes ?? undefined,
     }));
 
     const sessionsDescending = [...individualSessions].sort(

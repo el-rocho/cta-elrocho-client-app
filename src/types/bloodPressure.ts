@@ -13,7 +13,7 @@ export interface BloodPressureReading {
   diastolic: number; // Tensión diastólica (mmHg)
   heartRate: number; // Pulsaciones por minuto (ppm)
   arm: ArmPosition; // Brazo utilizado ('left' = Izquierdo, 'right' = Derecho)
-  notes?: string; // Notas adicionales del usuario
+  notes?: string | null; // Notas adicionales del usuario (null en tomas sin nota, tal como las devuelve el servidor)
   sessionId?: string; // ID de sesión si pertenece a un conjunto de lecturas continuas
   // Solo es true cuando una PP < 25 o > 60 mmHg fue confirmada por el usuario.
   pulsePressureWarningConfirmed?: boolean;

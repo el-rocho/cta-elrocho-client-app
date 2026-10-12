@@ -115,7 +115,7 @@ export const ReadingForm: React.FC<ReadingFormProps> = ({
       }, 1100);
     } catch (error) {
       setIsSaving(false);
-      throw error;
+      setErrorMsg(t('toast.storageError'));
     }
   };
 

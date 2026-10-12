@@ -5,7 +5,7 @@ import type { ComponentProps } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { ExportModal } from './ExportModal';
 import { LanguageProvider } from '../i18n/LanguageContext';
-import { DEFAULT_SETTINGS } from '../services/storageService';
+import { DEFAULT_SETTINGS, StorageServiceError } from '../services/storageService';
 import { createBackupSnapshot } from '../utils/backupService';
 
 const snapshot = createBackupSnapshot([{
@@ -27,13 +27,18 @@ const flush = async () => {
   }
 };
 
-async function renderModal(preview: ReturnType<typeof vi.fn>, restore: ReturnType<typeof vi.fn>, language: 'es' | 'en' = 'es') {
+async function renderModal(
+  preview: ReturnType<typeof vi.fn>,
+  restore: ReturnType<typeof vi.fn>,
+  language: 'es' | 'en' = 'es',
+  importReadings: ComponentProps<typeof ExportModal>['onImportReadings'] = vi.fn().mockResolvedValue(0),
+) {
   host = document.createElement('div'); document.body.appendChild(host);
   root = createRoot(host);
   await act(async () => root.render(
     <LanguageProvider language={language}>
       <ExportModal isOpen onClose={() => {}} sessions={[]} readings={[]} settings={{ ...DEFAULT_SETTINGS, language }}
-        onImportReadings={() => 0}
+        onImportReadings={importReadings}
         onPreviewBackupMerge={preview as ComponentProps<typeof ExportModal>['onPreviewBackupMerge']}
         onRestoreBackup={restore as ComponentProps<typeof ExportModal>['onRestoreBackup']}
         onUpdateSettings={() => {}} onTriggerManualBackup={() => {}} />
@@ -216,5 +221,74 @@ describe('backup merge preview in the import modal', () => {
 
     expect(preview).not.toHaveBeenCalled();
     expect(restore).not.toHaveBeenCalled();
+  });
+
+  it('keeps a CSV selection and does not show success when import persistence rejects', async () => {
+    const importReadings = vi.fn().mockRejectedValue(new Error('offline'));
+    const modal = await renderModal(vi.fn(), vi.fn(), 'es', importReadings);
+    await modal.selectFile('fecha,hora,sistolica,diastolica,pulsacion\n01/01/2026,08:00,120,80,70\n', 'readings.csv', 'text/csv');
+
+    await modal.click('Confirmar importación');
+
+    expect(importReadings).toHaveBeenCalledOnce();
+    expect(modal.findButton('Confirmar importación')).toBeDefined();
+    expect(host.querySelector('.import-status-box.error')).not.toBeNull();
+    expect(host.querySelector('.import-status-box.success')).toBeNull();
+  });
+
+  it('keeps a backup selection and does not show a successful replacement when a phase rejects', async () => {
+    vi.stubGlobal('confirm', vi.fn(() => true));
+    const modal = await renderModal(
+      vi.fn().mockResolvedValue({ addedCount: 1, duplicateCount: 0, conflictCount: 0, previewToken: 'token' }),
+      vi.fn().mockRejectedValue(new Error('settings failed')),
+    );
+    await modal.selectFile();
+
+    await modal.click('Restaurar y reemplazar');
+
+    expect(modal.findButton('Restaurar y reemplazar')).toBeDefined();
+    expect(host.querySelector('.import-status-box.error')).not.toBeNull();
+    expect(host.textContent).not.toMatch(/Restauradas 0 mediciones/);
+  });
+
+  it('does not present zero restored readings as a successful replacement', async () => {
+    vi.stubGlobal('confirm', vi.fn(() => true));
+    const modal = await renderModal(
+      vi.fn().mockResolvedValue({ addedCount: 0, duplicateCount: 0, conflictCount: 0, previewToken: 'token' }),
+      vi.fn().mockResolvedValue(0),
+    );
+    await modal.selectFile();
+
+    await modal.click('Restaurar y reemplazar');
+
+    expect(modal.findButton('Restaurar y reemplazar')).toBeDefined();
+    expect(host.querySelector('.import-status-box.error')).not.toBeNull();
+    expect(host.querySelector('.import-status-box.success')).toBeNull();
+  });
+
+  it('explains that the server is outdated (404) instead of the generic error when the merge preview route is missing', async () => {
+    const preview = vi.fn().mockRejectedValue(new StorageServiceError('unsupported-server', 'preview-backup-merge', 404));
+    const modal = await renderModal(preview, vi.fn());
+    await modal.selectFile();
+
+    expect(host.querySelector('.import-status-box.error')).not.toBeNull();
+    expect(host.textContent).toContain('no admite esta operación');
+    expect(host.textContent).toContain('Actualiza el servidor');
+    expect(host.textContent).not.toContain('vuelve a previsualizar');
+  });
+
+  it('explains that the server is outdated (404) instead of the generic error when the replace route is missing', async () => {
+    vi.stubGlobal('confirm', vi.fn(() => true));
+    const modal = await renderModal(
+      vi.fn().mockResolvedValue({ addedCount: 1, duplicateCount: 0, conflictCount: 0, previewToken: 't' }),
+      vi.fn().mockRejectedValue(new StorageServiceError('unsupported-server', 'restore-backup-replace', 404)),
+    );
+    await modal.selectFile();
+
+    await modal.click('Restaurar y reemplazar');
+
+    expect(host.querySelector('.import-status-box.error')).not.toBeNull();
+    expect(host.textContent).toContain('no admite esta operación');
+    expect(host.textContent).not.toContain('Tus cambios no se han aplicado');
   });
 });

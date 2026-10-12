@@ -43,8 +43,8 @@ interface EditReadingModalProps {
   reading: BloodPressureReading | null;
   settings: AppSettings;
   onUpdateInputMode?: (mode: InputMode) => void;
-  onSaveReading: (updatedReading: BloodPressureReading) => void;
-  onDeleteReading?: (readingId: string) => void;
+  onSaveReading: (updatedReading: BloodPressureReading) => void | Promise<void>;
+  onDeleteReading?: (readingId: string) => void | Promise<void>;
   readings: BloodPressureReading[];
 }
 
@@ -70,6 +70,7 @@ export const EditReadingModal: React.FC<EditReadingModalProps> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [pendingReading, setPendingReading] = useState<BloodPressureReading | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const activeInputMode = settings.preferredInputMode || inputMode;
 
@@ -112,10 +113,19 @@ export const EditReadingModal: React.FC<EditReadingModalProps> = ({
     }
   };
 
-  const saveReading = (updated: BloodPressureReading, pulsePressureWarningConfirmed: boolean) => {
-    onSaveReading({ ...updated, pulsePressureWarningConfirmed });
-    setPendingReading(null);
-    onClose();
+  const saveReading = async (updated: BloodPressureReading, pulsePressureWarningConfirmed: boolean) => {
+    if (isSaving) return;
+    setIsSaving(true);
+    setErrorMsg(null);
+    try {
+      await Promise.resolve(onSaveReading({ ...updated, pulsePressureWarningConfirmed }));
+      setPendingReading(null);
+      onClose();
+    } catch {
+      setErrorMsg(t('toast.storageError'));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -357,11 +367,15 @@ export const EditReadingModal: React.FC<EditReadingModalProps> = ({
                   type="button"
                   className="btn-danger-confirm"
                   onClick={() => {
-                    if (reading && onDeleteReading) {
-                      onDeleteReading(reading.id);
-                      onClose();
-                    }
+                    if (!reading || !onDeleteReading || isSaving) return;
+                    setIsSaving(true);
+                    setErrorMsg(null);
+                    void Promise.resolve(onDeleteReading(reading.id))
+                      .then(() => onClose())
+                      .catch(() => setErrorMsg(t('toast.storageError')))
+                      .finally(() => setIsSaving(false));
                   }}
+                  disabled={isSaving}
                 >
                   {t('editModal.confirmDeleteBtn')}
                 </button>
@@ -385,7 +399,7 @@ export const EditReadingModal: React.FC<EditReadingModalProps> = ({
                   <X size={20} />
                   <span>{t('editModal.cancel')}</span>
                 </button>
-                <button type="submit" className="btn-primary-large" aria-label={t('editModal.save')} title={t('editModal.save')}>
+                <button type="submit" className="btn-primary-large" aria-label={t('editModal.save')} title={t('editModal.save')} disabled={isSaving}>
                   <Save size={20} />
                   <span>{t('editModal.save')}</span>
                 </button>

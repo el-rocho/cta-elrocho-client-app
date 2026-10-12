@@ -1,5 +1,6 @@
 import type { BloodPressureReading, AppSettings } from '../types/bloodPressure';
 import { getSavedServerUrl } from './serverConfigService';
+import { isObject, isReading, isReadings } from '../utils/readingGuards';
 
 let freshRequestSequence = 0;
 
@@ -31,6 +32,39 @@ export const DEFAULT_SETTINGS: AppSettings = {
   lastFullBackupTimestamp: undefined,
 };
 
+export type StorageServiceErrorKind = 'network' | 'unauthorized' | 'forbidden' | 'http' | 'invalid-response' | 'unsupported-server';
+export type StorageOperation =
+  | 'fetch-readings'
+  | 'add-reading'
+  | 'update-reading'
+  | 'update-medication-context'
+  | 'delete-reading'
+  | 'delete-session'
+  | 'clear-readings'
+  | 'reset-demo'
+  | 'import-readings'
+  | 'fetch-settings'
+  | 'save-settings'
+  | 'preview-backup-merge'
+  | 'restore-backup-merge'
+  | 'restore-backup-replace';
+
+export class StorageServiceError extends Error {
+  readonly kind: StorageServiceErrorKind;
+  readonly operation: StorageOperation;
+  readonly status?: number;
+  readonly cause?: unknown;
+
+  constructor(kind: StorageServiceErrorKind, operation: StorageOperation, status?: number, cause?: unknown) {
+    super(`Storage operation ${operation} failed (${kind}${status ? ` ${status}` : ''})`);
+    this.name = 'StorageServiceError';
+    this.kind = kind;
+    this.operation = operation;
+    this.status = status;
+    this.cause = cause;
+  }
+}
+
 function getApiBase(): string {
   const serverUrl = getSavedServerUrl();
   return serverUrl ? `${serverUrl}/api` : '/api';
@@ -39,194 +73,163 @@ function getApiBase(): string {
 function getAuthHeaders(extraHeaders: Record<string, string> = {}): Record<string, string> {
   const headers: Record<string, string> = { ...extraHeaders };
   const token = localStorage.getItem('cta_session_token');
-  if (token) {
-    headers['x-session-token'] = token;
-  }
+  if (token) headers['x-session-token'] = token;
   return headers;
 }
 
-export async function fetchReadingsFromServer(): Promise<BloodPressureReading[]> {
-  try {
-    const apiBase = getApiBase();
-    const res = await fetch(freshApiUrl(`${apiBase}/readings`), {
-      headers: getAuthHeaders(),
-      credentials: 'include',
-      cache: 'no-store',
-    });
-    if (!res.ok) return [];
-    return await res.json();
-  } catch (error) {
-    console.error('Error al consultar mediciones del servidor:', error);
-    return [];
-  }
+export function isSettings(value: unknown): value is AppSettings {
+  if (!isObject(value)) return false;
+  const candidate = { ...DEFAULT_SETTINGS, ...value } as AppSettings;
+  return (candidate.language === 'es' || candidate.language === 'en')
+    && typeof candidate.enableWhiteCoatFilter === 'boolean'
+    && (candidate.defaultArm === 'left' || candidate.defaultArm === 'right')
+    && (candidate.preferredInputMode === 'keyboard' || candidate.preferredInputMode === 'wheel')
+    && ['esc-2024', 'aha-acc-2025', 'ish-2020'].includes(candidate.guidelineProfile)
+    && typeof candidate.showInformationalLabels === 'boolean'
+    && (candidate.treatmentTargetMode === 'guideline' || candidate.treatmentTargetMode === 'custom')
+    && [candidate.customTargetSystolicMin, candidate.customTargetSystolicMax, candidate.customTargetDiastolicMin, candidate.customTargetDiastolicMax].every(Number.isFinite)
+    && typeof candidate.takesAntihypertensiveMedication === 'boolean'
+    && ['disabled', 'daily', 'weekly', 'monthly'].includes(candidate.backupFrequency)
+    && candidate.whiteCoatIntervalMinutes === 5
+    && typeof candidate.backupFolder === 'string'
+    && (candidate.patientName === undefined || typeof candidate.patientName === 'string')
+    && (candidate.patientSex === undefined || candidate.patientSex === '' || candidate.patientSex === 'masculino' || candidate.patientSex === 'femenino')
+    && (candidate.patientAge === undefined || candidate.patientAge === '' || (typeof candidate.patientAge === 'number' && Number.isFinite(candidate.patientAge)))
+    && (candidate.patientBirthDate === undefined || typeof candidate.patientBirthDate === 'string')
+    && (candidate.lastBackupTimestamp === undefined || typeof candidate.lastBackupTimestamp === 'string')
+    && (candidate.lastFullBackupTimestamp === undefined || typeof candidate.lastFullBackupTimestamp === 'string');
 }
 
-export async function addReadingToServer(newReading: Omit<BloodPressureReading, 'id'>): Promise<BloodPressureReading | null> {
+async function request(operation: StorageOperation, path: string, init?: RequestInit): Promise<Response> {
+  let response: Response;
   try {
-    const apiBase = getApiBase();
-    const res = await fetch(`${apiBase}/readings`, {
-      method: 'POST',
-      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-      credentials: 'include',
-      body: JSON.stringify(newReading),
-    });
-    if (!res.ok) return null;
-    return await res.json();
-  } catch (error) {
-    console.error('Error al guardar medición en el servidor:', error);
-    return null;
+    response = await fetch(path, init);
+  } catch (cause) {
+    throw new StorageServiceError('network', operation, undefined, cause);
   }
+  if (!response.ok) {
+    // 401 = sesión revocada/caducada (hay que volver al acceso).
+    // 403 = prohibido (p. ej. falta el token explícito en import/restaurar, o permisos);
+    // NO implica que la sesión haya caducado, así que nunca debe provocar un cierre de sesión.
+    const kind: StorageServiceErrorKind = response.status === 401
+      ? 'unauthorized'
+      : response.status === 403
+        ? 'forbidden'
+        : 'http';
+    throw new StorageServiceError(kind, operation, response.status);
+  }
+  return response;
 }
 
-export async function updateReadingOnServer(updatedReading: BloodPressureReading): Promise<boolean> {
+async function requestJson<T>(
+  operation: StorageOperation,
+  path: string,
+  init: RequestInit | undefined,
+  validate: (value: unknown) => value is T
+): Promise<T> {
+  const response = await request(operation, path, init);
+  let data: unknown;
   try {
-    const apiBase = getApiBase();
-    const res = await fetch(`${apiBase}/readings/${updatedReading.id}`, {
-      method: 'PUT',
-      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-      credentials: 'include',
-      body: JSON.stringify(updatedReading),
-    });
-    return res.ok;
-  } catch (error) {
-    console.error('Error al actualizar toma en el servidor:', error);
-    return false;
+    data = await response.json();
+  } catch (cause) {
+    throw new StorageServiceError('invalid-response', operation, response.status, cause);
   }
+  if (!validate(data)) throw new StorageServiceError('invalid-response', operation, response.status);
+  return data;
 }
 
-export async function updateMedicationContextForAllReadings(
-  takesAntihypertensiveMedication: boolean
-): Promise<boolean> {
-  try {
-    const apiBase = getApiBase();
-    const res = await fetch(`${apiBase}/readings/medication-context`, {
-      method: 'PUT',
-      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-      credentials: 'include',
-      body: JSON.stringify({ takesAntihypertensiveMedication }),
-    });
-    return res.ok;
-  } catch (error) {
-    console.error('Error al actualizar el contexto de medicación del historial:', error);
-    return false;
-  }
+export function fetchReadingsFromServer(): Promise<BloodPressureReading[]> {
+  const apiBase = getApiBase();
+  return requestJson('fetch-readings', freshApiUrl(`${apiBase}/readings`), {
+    headers: getAuthHeaders(), credentials: 'include', cache: 'no-store',
+  }, isReadings);
 }
 
-export async function deleteReadingFromServer(id: string): Promise<boolean> {
-  try {
-    const apiBase = getApiBase();
-    const res = await fetch(`${apiBase}/readings/${id}`, {
-      method: 'DELETE',
-      headers: getAuthHeaders(),
-      credentials: 'include',
-    });
-    return res.ok;
-  } catch (error) {
-    console.error('Error al eliminar toma en el servidor:', error);
-    return false;
-  }
+export function addReadingToServer(newReading: Omit<BloodPressureReading, 'id'>): Promise<BloodPressureReading> {
+  const apiBase = getApiBase();
+  return requestJson('add-reading', `${apiBase}/readings`, {
+    method: 'POST', headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+    credentials: 'include', body: JSON.stringify(newReading),
+  }, isReading);
 }
 
-export async function deleteSessionFromServer(readingIds: string[]): Promise<boolean> {
-  try {
-    const apiBase = getApiBase();
-    const res = await fetch(`${apiBase}/sessions/delete`, {
-      method: 'POST',
-      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-      credentials: 'include',
-      body: JSON.stringify({ readingIds }),
-    });
-    return res.ok;
-  } catch (error) {
-    console.error('Error al eliminar sesión en el servidor:', error);
-    return false;
-  }
+export async function updateReadingOnServer(updatedReading: BloodPressureReading): Promise<void> {
+  const apiBase = getApiBase();
+  await request('update-reading', `${apiBase}/readings/${updatedReading.id}`, {
+    method: 'PUT', headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+    credentials: 'include', body: JSON.stringify(updatedReading),
+  });
 }
 
-export async function clearAllReadingsOnServer(): Promise<boolean> {
-  try {
-    const apiBase = getApiBase();
-    const res = await fetch(`${apiBase}/readings/all/confirm`, {
-      method: 'DELETE',
-      headers: getAuthHeaders(),
-      credentials: 'include',
-    });
-    return res.ok;
-  } catch (error) {
-    console.error('Error al vaciar historial en el servidor:', error);
-    return false;
-  }
+export async function updateMedicationContextForAllReadings(takesAntihypertensiveMedication: boolean): Promise<void> {
+  const apiBase = getApiBase();
+  await request('update-medication-context', `${apiBase}/readings/medication-context`, {
+    method: 'PUT', headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+    credentials: 'include', body: JSON.stringify({ takesAntihypertensiveMedication }),
+  });
 }
 
-export async function resetDemoDataOnServer(): Promise<BloodPressureReading[]> {
-  try {
-    const apiBase = getApiBase();
-    const res = await fetch(`${apiBase}/readings/reset-demo`, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      credentials: 'include',
-    });
-    if (!res.ok) return [];
-    return await res.json();
-  } catch (error) {
-    console.error('Error al restaurar mediciones de demostración en el servidor:', error);
-    return [];
-  }
+export async function deleteReadingFromServer(id: string): Promise<void> {
+  const apiBase = getApiBase();
+  await request('delete-reading', `${apiBase}/readings/${id}`, {
+    method: 'DELETE', headers: getAuthHeaders(), credentials: 'include',
+  });
 }
 
-export async function importReadingsToServer(imported: Omit<BloodPressureReading, 'id'>[]): Promise<{ addedCount: number; readings: BloodPressureReading[] }> {
-  try {
-    const apiBase = getApiBase();
-    const res = await fetch(`${apiBase}/readings/import`, {
-      method: 'POST',
-      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-      credentials: 'include',
-      body: JSON.stringify(imported),
-    });
-    if (!res.ok) return { addedCount: 0, readings: [] };
-    const data = await res.json();
-    return { addedCount: data.addedCount || 0, readings: data.readings || [] };
-  } catch (error) {
-    console.error('Error al importar mediciones en el servidor:', error);
-    return { addedCount: 0, readings: [] };
-  }
+export async function deleteSessionFromServer(readingIds: string[]): Promise<void> {
+  const apiBase = getApiBase();
+  await request('delete-session', `${apiBase}/sessions/delete`, {
+    method: 'POST', headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+    credentials: 'include', body: JSON.stringify({ readingIds }),
+  });
+}
+
+export async function clearAllReadingsOnServer(): Promise<void> {
+  const apiBase = getApiBase();
+  await request('clear-readings', `${apiBase}/readings/all/confirm`, {
+    method: 'DELETE', headers: getAuthHeaders(), credentials: 'include',
+  });
+}
+
+export function resetDemoDataOnServer(): Promise<BloodPressureReading[]> {
+  const apiBase = getApiBase();
+  return requestJson('reset-demo', `${apiBase}/readings/reset-demo`, {
+    method: 'POST', headers: getAuthHeaders(), credentials: 'include',
+  }, isReadings);
+}
+
+interface ImportResult { addedCount: number; readings: BloodPressureReading[] }
+function isImportResult(value: unknown): value is ImportResult {
+  return isObject(value)
+    && Number.isSafeInteger(value.addedCount)
+    && (value.addedCount as number) >= 0
+    && isReadings(value.readings);
+}
+
+export function importReadingsToServer(imported: Omit<BloodPressureReading, 'id'>[]): Promise<ImportResult> {
+  const apiBase = getApiBase();
+  return requestJson('import-readings', `${apiBase}/readings/import`, {
+    method: 'POST', headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+    credentials: 'include', body: JSON.stringify(imported),
+  }, isImportResult);
 }
 
 export async function fetchSettingsFromServer(): Promise<AppSettings> {
-  try {
-    const apiBase = getApiBase();
-    const res = await fetch(freshApiUrl(`${apiBase}/settings`), {
-      headers: getAuthHeaders(),
-      credentials: 'include',
-      cache: 'no-store',
-    });
-    if (!res.ok) return DEFAULT_SETTINGS;
-    const data = await res.json();
-    return {
-      ...DEFAULT_SETTINGS,
-      ...data,
-      showInformationalLabels: typeof data.showInformationalLabels === 'boolean'
-        ? data.showInformationalLabels
-        : true,
-    };
-  } catch (error) {
-    console.error('Error al consultar ajustes del servidor:', error);
-    return DEFAULT_SETTINGS;
-  }
+  const apiBase = getApiBase();
+  const data = await requestJson('fetch-settings', freshApiUrl(`${apiBase}/settings`), {
+    headers: getAuthHeaders(), credentials: 'include', cache: 'no-store',
+  }, isSettings);
+  return {
+    ...DEFAULT_SETTINGS,
+    ...data,
+    showInformationalLabels: typeof data.showInformationalLabels === 'boolean' ? data.showInformationalLabels : true,
+  };
 }
 
-export async function saveSettingsToServer(settings: AppSettings): Promise<boolean> {
-  try {
-    const apiBase = getApiBase();
-    const res = await fetch(`${apiBase}/settings`, {
-      method: 'POST',
-      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-      credentials: 'include',
-      body: JSON.stringify(settings),
-    });
-    return res.ok;
-  } catch (error) {
-    console.error('Error al guardar ajustes en el servidor:', error);
-    return false;
-  }
+export async function saveSettingsToServer(settings: AppSettings): Promise<void> {
+  const apiBase = getApiBase();
+  await request('save-settings', `${apiBase}/settings`, {
+    method: 'POST', headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+    credentials: 'include', body: JSON.stringify(settings),
+  });
 }

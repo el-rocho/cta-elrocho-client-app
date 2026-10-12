@@ -566,6 +566,9 @@ export const translations = {
       clearAllConfirm: '¿Seguro que deseas ELIMINAR TODOS los datos? Esta acción borrará permanentemente todo tu historial.',
       clearAllSuccess: '✓ Se han eliminado todos los datos de la aplicación.',
       updateSuccess: '✓ Toma de tensión actualizada correctamente.',
+      storageError: 'No se pudo completar la operación. Tus cambios no se han aplicado.',
+      sessionExpired: 'La sesión ha caducado o ya no está autorizada. Inicia sesión de nuevo.',
+      serverUnsupported: 'Tu servidor no admite esta operación (puede ser una versión anterior). Actualiza el servidor autoalojado y vuelve a intentarlo.',
     },
 
     // Generador de PDF e Informes
@@ -1155,6 +1158,9 @@ export const translations = {
       clearAllConfirm: 'Are you sure you want to DELETE ALL data? This action will permanently erase all your history.',
       clearAllSuccess: '✓ All application data has been deleted.',
       updateSuccess: '✓ Pressure reading updated successfully.',
+      storageError: 'The operation could not be completed. Your changes were not applied.',
+      sessionExpired: 'Your session has expired or is no longer authorized. Sign in again.',
+      serverUnsupported: 'Your server does not support this operation (it may be an older version). Update the self-hosted server and try again.',
     },
 
     // PDF Report Generator

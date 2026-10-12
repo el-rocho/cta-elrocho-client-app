@@ -54,7 +54,9 @@ function isValidReading(value: unknown): value is BloodPressureReading {
       diastolic: value.diastolic,
       heartRate: value.heartRate,
     }) &&
-    (value.notes === undefined || typeof value.notes === 'string') &&
+    // Las tomas del servidor pueden llegar con `notes: null` (SQLite); una copia
+    // exportada desde ellas debe poder volver a importarse.
+    (value.notes === undefined || value.notes === null || typeof value.notes === 'string') &&
     (value.sessionId === undefined || typeof value.sessionId === 'string') &&
     (value.pulsePressureWarningConfirmed === undefined || typeof value.pulsePressureWarningConfirmed === 'boolean') &&
     (value.takesAntihypertensiveMedication === undefined || typeof value.takesAntihypertensiveMedication === 'boolean')
