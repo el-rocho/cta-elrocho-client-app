@@ -395,41 +395,27 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                       <strong>{new Date(pendingImport.snapshot.createdAt).toLocaleDateString(locale)}</strong>
                       <span>{t('data.backupCreatedAt')}</span>
                     </div>
+                    {mergePreview && (
+                      <>
+                        <div className="import-summary-item merge-count">
+                          <strong>{mergePreview.addedCount}</strong>
+                          <span>{t('data.mergeAddedLabel')}</span>
+                        </div>
+                        <div className="import-summary-item merge-count">
+                          <strong>{mergePreview.duplicateCount}</strong>
+                          <span>{t('data.mergeDuplicatesLabel')}</span>
+                        </div>
+                        <div className={`import-summary-item merge-count${mergePreview.conflictCount > 0 ? ' is-conflict' : ''}`}>
+                          <strong>{mergePreview.conflictCount}</strong>
+                          <span>{t('data.mergeConflictsLabel')}</span>
+                        </div>
+                      </>
+                    )}
                   </div>
-                  {mergePreview && (
-                    <div className="import-summary-grid merge-counts-grid">
-                      <div className="import-summary-item">
-                        <strong>{mergePreview.addedCount}</strong>
-                        <span>{t('data.mergeAddedLabel')}</span>
-                      </div>
-                      <div className="import-summary-item">
-                        <strong>{mergePreview.duplicateCount}</strong>
-                        <span>{t('data.mergeDuplicatesLabel')}</span>
-                      </div>
-                      <div className={`import-summary-item${mergePreview.conflictCount > 0 ? ' is-conflict' : ''}`}>
-                        <strong>{mergePreview.conflictCount}</strong>
-                        <span>{t('data.mergeConflictsLabel')}</span>
-                      </div>
-                    </div>
-                  )}
-                  {previewBusy && !mergePreview ? (
+                  {previewBusy && !mergePreview && (
                     <div className="import-preview-note checking" role="status">
                       <Clock3 size={17} />
                       <span>{t('data.mergePreviewChecking')}</span>
-                    </div>
-                  ) : mergePreview ? (
-                    <div className={`import-preview-note ${mergePreview.conflictCount > 0 ? 'merge-conflicts' : 'merge-ok'}`} role="status">
-                      {mergePreview.conflictCount > 0 ? <AlertCircle size={17} /> : <CheckCircle2 size={17} />}
-                      <span>
-                        {mergePreview.conflictCount > 0
-                          ? <strong>{t('data.mergeConflictNotice', { conflictCount: mergePreview.conflictCount })}</strong>
-                          : t('data.mergeNoConflictNotice', { addedCount: mergePreview.addedCount, duplicateCount: mergePreview.duplicateCount })}
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="import-preview-note">
-                      <CheckCircle2 size={17} />
-                      <span>{t('data.nativeBackupNotice')}</span>
                     </div>
                   )}
                   <div className="import-preview-actions restore-actions">

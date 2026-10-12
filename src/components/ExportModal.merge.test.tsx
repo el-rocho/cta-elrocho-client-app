@@ -74,19 +74,17 @@ describe('backup merge preview in the import modal', () => {
     expect(preview).toHaveBeenCalledOnce();
     expect(preview).toHaveBeenCalledWith(snapshot);
     expect(restore).not.toHaveBeenCalled();
-    expect(host.textContent).toMatch(/mediciones añadidas/i);
-    expect(host.textContent).toMatch(/duplicadas idénticas/i);
-    expect(host.textContent).toMatch(/misma fecha\/hora, datos distintos/i);
-    expect(host.textContent).toMatch(/misma fecha y hora pero datos distintos: 3/i);
-    expect(host.textContent).toMatch(/se conservarán ambas/i);
+    expect(host.textContent).toMatch(/mediciones preparadas/i);
+    expect(host.textContent).toMatch(/fecha de la copia/i);
+    expect(host.textContent).toMatch(/tomas nuevas/i);
+    expect(host.textContent).toMatch(/tomas duplicadas/i);
+    expect(host.textContent).toMatch(/tomas misma fecha\/hora/i);
+    expect(host.textContent).not.toMatch(/misma fecha y hora pero datos distintos/i);
+    expect(host.textContent).not.toMatch(/se conservarán ambas/i);
 
-    const note = host.querySelector('.import-preview-card .import-preview-note')!;
-    expect(note.classList.contains('merge-conflicts')).toBe(true);
-    expect(note.querySelector('svg')).not.toBeNull();
-    expect(note.textContent).toContain('3');
-
-    const conflictCounter = host.querySelector('.import-preview-card .is-conflict');
+    const conflictCounter = host.querySelector('.import-preview-card .import-summary-item.is-conflict');
     expect(conflictCounter).not.toBeNull();
+    expect(conflictCounter!.classList.contains('merge-count')).toBe(true);
     expect(conflictCounter!.textContent).toContain('3');
 
     expect(modal.findButton('Combinar mediciones')).toBeDefined();
@@ -105,19 +103,71 @@ describe('backup merge preview in the import modal', () => {
     expect(host.textContent).toMatch(/Combinación completada/);
   });
 
-  it('shows a neutral note and does not write until the action is clicked when there are no conflicts', async () => {
+  it('shows a single two-row grid with the five unified labels in Spanish and no informative card', async () => {
+    const preview = vi.fn().mockResolvedValue({ addedCount: 5, duplicateCount: 2, conflictCount: 3, previewToken: 'token' });
+    const modal = await renderModal(preview, vi.fn());
+    await modal.selectFile();
+
+    // Un único grid para los cinco contadores (fila 1: 2 elementos, fila 2: 3 elementos)
+    const grids = host.querySelectorAll('.import-preview-card .import-summary-grid');
+    expect(grids).toHaveLength(1);
+    const grid = grids[0] as HTMLElement;
+    expect(grid.classList.contains('backup-preview-grid')).toBe(true);
+    expect(grid.classList.contains('merge-counts-grid')).toBe(false);
+
+    const items = [...grid.querySelectorAll('.import-summary-item')];
+    expect(items).toHaveLength(5);
+    expect(items.map((item) => item.querySelector('span')!.textContent)).toEqual([
+      'mediciones preparadas',
+      'fecha de la copia',
+      'tomas nuevas',
+      'tomas duplicadas',
+      'tomas misma fecha/hora',
+    ]);
+    expect(items.map((item) => item.querySelector('strong')!.textContent)).toEqual(['1', expect.any(String), '5', '2', '3']);
+    expect(items.map((item) => item.classList.contains('merge-count'))).toEqual([false, false, true, true, true]);
+
+    // La tarjeta informativa entre los contadores y los botones ya no se muestra
+    expect(host.textContent).not.toMatch(/Mediciones nuevas:/i);
+    expect(host.textContent).not.toMatch(/ya existentes omitidas/i);
+    expect(host.textContent).not.toMatch(/misma fecha y hora pero datos distintos/i);
+    expect(host.textContent).not.toMatch(/se conservarán ambas/i);
+    expect(host.textContent).not.toMatch(/Esta copia contiene las tomas originales/i);
+    expect(host.querySelector('.import-preview-note.merge-conflicts')).toBeNull();
+    expect(host.querySelector('.import-preview-note.merge-ok')).toBeNull();
+    expect(host.querySelectorAll('.import-preview-card .import-preview-note')).toHaveLength(0);
+
+    // El conflicto sigue visible mediante la clase is-conflict del contador
+    expect(host.querySelector('.import-summary-item.merge-count.is-conflict')!.textContent).toContain('3');
+  });
+
+  it('shows only the first two counters in the grid until the merge counts are available', async () => {
+    let resolvePreview!: (value: unknown) => void;
+    const preview = vi.fn().mockReturnValue(new Promise((resolve) => { resolvePreview = resolve; }));
+    const modal = await renderModal(preview, vi.fn());
+    await modal.selectFile();
+
+    const grid = host.querySelector('.import-preview-card .import-summary-grid.backup-preview-grid')!;
+    expect(grid.querySelectorAll('.import-summary-item')).toHaveLength(2);
+    expect(grid.querySelectorAll('.import-summary-item.merge-count')).toHaveLength(0);
+
+    await act(async () => { resolvePreview({ addedCount: 1, duplicateCount: 0, conflictCount: 0, previewToken: 't' }); });
+    await flush();
+    expect(grid.querySelectorAll('.import-summary-item')).toHaveLength(5);
+  });
+
+  it('shows the merge counters in the same grid and does not write until the action is clicked when there are no conflicts', async () => {
     const preview = vi.fn().mockResolvedValue({ addedCount: 5, duplicateCount: 2, conflictCount: 0, previewToken: 'clean' });
     const restore = vi.fn().mockResolvedValue({ addedCount: 5, duplicateCount: 2, conflictCount: 0 });
     const modal = await renderModal(preview, restore);
     await modal.selectFile();
 
     expect(restore).not.toHaveBeenCalled();
-    expect(host.textContent).toMatch(/Mediciones nuevas: 5/);
-    expect(host.textContent).toMatch(/ya existentes omitidas: 2/);
-
-    const note = host.querySelector('.import-preview-card .import-preview-note')!;
-    expect(note.classList.contains('merge-conflicts')).toBe(false);
+    expect(host.querySelectorAll('.import-summary-item.merge-count')).toHaveLength(3);
+    expect(host.querySelector('.import-summary-item.merge-count')!.textContent).toContain('5');
     expect(host.querySelector('.import-preview-card .is-conflict')).toBeNull();
+    expect(host.querySelector('.import-preview-note.merge-conflicts')).toBeNull();
+    expect(host.querySelector('.import-preview-note.merge-ok')).toBeNull();
 
     await modal.click('Combinar mediciones');
     expect(restore).toHaveBeenCalledOnce();
@@ -131,7 +181,14 @@ describe('backup merge preview in the import modal', () => {
     await modal.selectFile();
 
     expect(preview).toHaveBeenCalledOnce();
-    expect(host.textContent).toMatch(/readings with the same date and time but different data: 3/i);
+    const labels = [...host.querySelectorAll('.import-summary-item span')].map((item) => item.textContent);
+    expect(labels).toEqual([
+      'measurements ready',
+      'backup date',
+      'new readings',
+      'duplicate readings',
+      'readings same date/time',
+    ]);
     await modal.click('Merge readings');
     expect(restore).toHaveBeenCalledWith(snapshot, 'merge', 'opaque');
     expect(host.textContent).toMatch(/added: 1.*duplicates skipped: 2.*different data: 3/i);
@@ -151,7 +208,8 @@ describe('backup merge preview in the import modal', () => {
     await act(async () => { resolvePreview({ addedCount: 1, duplicateCount: 0, conflictCount: 0, previewToken: 't' }); });
     await flush();
     expect(modal.findButton('Combinar mediciones')!.disabled).toBe(false);
-    expect(host.textContent).toMatch(/Mediciones nuevas: 1/);
+    expect(host.textContent).not.toMatch(/Comprobando/i);
+    expect(host.querySelector('.import-summary-item.merge-count')!.textContent).toContain('1');
   });
 
   it('keeps the file and requires a second click after retrying a failed preview', async () => {
@@ -169,7 +227,7 @@ describe('backup merge preview in the import modal', () => {
     await modal.click('Combinar mediciones');
     expect(preview).toHaveBeenCalledTimes(2);
     expect(restore).not.toHaveBeenCalled();
-    expect(host.textContent).toMatch(/misma fecha y hora pero datos distintos: 1/i);
+    expect(host.querySelector('.import-summary-item.merge-count.is-conflict')!.textContent).toContain('1');
     await modal.click('Combinar mediciones');
     expect(restore).toHaveBeenCalledOnce();
     expect(restore).toHaveBeenCalledWith(snapshot, 'merge', 'fresh');
