@@ -30,7 +30,7 @@ vi.mock('./components/TrendChart', () => ({ TrendChart: () => null }));
 vi.mock('./components/TrendInsights', () => ({ TrendInsights: () => null }));
 vi.mock('./components/ReadingList', () => ({ ReadingList: () => null }));
 vi.mock('./components/EditReadingModal', () => ({ EditReadingModal: () => null }));
-vi.mock('./components/ExportModal', () => ({ ExportModal: ({ isOpen, onImportReadings, onPreviewBackupMerge, onRestoreBackup }: any) => isOpen ? <div data-testid="export-modal"><button onClick={() => onImportReadings([{ timestamp: '2026-01-02T08:00:00.000Z', systolic: 121, diastolic: 81, heartRate: 71, arm: 'left' }])}>import readings</button><button onClick={() => { void onPreviewBackupMerge({ createdAt: '2026-01-02T00:00:00.000Z', readings: [], settings: {} }).catch(() => {}); }}>preview backup</button><button onClick={() => { void onRestoreBackup({ createdAt: '2026-01-02T00:00:00.000Z', readings: [{ id: 'b1', timestamp: '2026-01-02T08:00:00.000Z', systolic: 121, diastolic: 81, heartRate: 71, arm: 'left' }], settings: {} }, 'replace').catch(() => {}); }}>replace backup</button></div> : null }));
+vi.mock('./components/ExportModal', () => ({ ExportModal: ({ isOpen, settings, onImportReadings, onPreviewBackupMerge, onRestoreBackup, onTriggerManualBackup }: any) => isOpen ? <div data-testid="export-modal"><span data-testid="last-backup">{settings.lastFullBackupTimestamp ?? 'none'}</span><button onClick={onTriggerManualBackup}>create backup</button><button onClick={() => onImportReadings([{ timestamp: '2026-01-02T08:00:00.000Z', systolic: 121, diastolic: 81, heartRate: 71, arm: 'left' }])}>import readings</button><button onClick={() => { void onPreviewBackupMerge({ createdAt: '2026-01-02T00:00:00.000Z', readings: [], settings: {} }).catch(() => {}); }}>preview backup</button><button onClick={() => { void onRestoreBackup({ createdAt: '2026-01-02T00:00:00.000Z', readings: [{ id: 'b1', timestamp: '2026-01-02T08:00:00.000Z', systolic: 121, diastolic: 81, heartRate: 71, arm: 'left' }], settings: {} }, 'replace').catch(() => {}); }}>replace backup</button></div> : null }));
 vi.mock('./components/SettingsModal', () => ({ SettingsModal: ({ isOpen, settings, onUpdateSettings, onResetDemoData, onClearAllData }: any) => isOpen ? <div data-testid="settings-modal"><span data-testid="settings-language">{settings.language}</span><button onClick={() => onUpdateSettings({ ...settings, language: 'en' })}>save settings</button><button onClick={onResetDemoData}>reset demo</button><button onClick={onClearAllData}>clear all</button></div> : null }));
 vi.mock('./components/LegalNoticeModal', () => ({ LegalNoticeModal: () => null }));
 vi.mock('./components/LoginModal', () => ({ LoginModal: () => <div data-testid="login-modal">login</div> }));
@@ -43,6 +43,7 @@ import * as storage from './services/storageService';
 import { getAuthStatus, logout } from './services/authService';
 import { testServerConnection } from './services/serverConfigService';
 import { previewBackupMerge, restoreBackupReplace } from './services/backupMergeService';
+import * as backup from './utils/backupService';
 
 const reading: BloodPressureReading = {
   id: 'r1', timestamp: '2026-01-01T08:00:00.000Z', systolic: 120,
@@ -125,17 +126,16 @@ describe('App storage error UX', () => {
     expect(host.textContent).toContain('sesión ha caducado');
   });
 
-  it('does NOT end the session when a backup import/restore receives 403 (missing explicit token)', async () => {
-    vi.mocked(previewBackupMerge).mockRejectedValue(new storage.StorageServiceError('forbidden', 'preview-backup-merge', 403));
+  it('does not log out or add a duplicate generic toast when the explicit restore token is missing', async () => {
+    vi.mocked(previewBackupMerge).mockRejectedValue(new storage.StorageServiceError('session-token-required', 'preview-backup-merge'));
     await renderApp();
     await click('open export');
     await click('preview backup');
 
-    // The cookie/active session may still be valid: never force a logout on 403.
     expect(localStorage.removeItem).not.toHaveBeenCalledWith('cta_session_token');
     expect(logout).not.toHaveBeenCalled();
     expect(host.querySelector('[data-testid="login-modal"]')).toBeNull();
-    expect(host.textContent).toContain('Tus cambios no se han aplicado');
+    expect(host.textContent).not.toContain('Tus cambios no se han aplicado');
     expect(host.textContent).not.toContain('sesión ha caducado');
   });
 
@@ -184,6 +184,24 @@ describe('App storage error UX', () => {
     expect(restoreBackupReplace).toHaveBeenCalledOnce();
     expect(host.querySelector('[data-testid="reading-count"]')!.textContent).toBe('2');
     expect(host.textContent).not.toContain('Tus cambios no se han aplicado');
+  });
+
+  it('persists and displays the confirmed backup timestamp without showing a second success toast', async () => {
+    vi.spyOn(backup, 'saveBackup').mockResolvedValue({ mode: 'web', filename: 'copy.json', saved: true });
+    vi.mocked(storage.saveSettingsToServer).mockResolvedValue();
+    await renderApp();
+    await click('open export');
+    await click('create backup');
+
+    expect(host.textContent).toContain('Confirmar copia guardada');
+    await click('Confirmar copia guardada');
+
+    expect(storage.saveSettingsToServer).toHaveBeenCalledOnce();
+    const persisted = vi.mocked(storage.saveSettingsToServer).mock.calls[0][0];
+    expect(persisted.lastBackupTimestamp).toBeTruthy();
+    expect(persisted.lastFullBackupTimestamp).toBe(persisted.lastBackupTimestamp);
+    expect(host.querySelector('[data-testid="last-backup"]')!.textContent).toBe(persisted.lastFullBackupTimestamp);
+    expect(host.textContent).not.toContain('Copia confirmada. Se ha actualizado la fecha del recordatorio.');
   });
 
   it('finishes loading with an error instead of treating a failed fetch as empty data', async () => {

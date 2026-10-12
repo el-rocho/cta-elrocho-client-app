@@ -129,9 +129,11 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   // Un 404/405 en las rutas de copias significa que el servidor es anterior a
   // estas operaciones: mostramos un aviso accionable en lugar del genérico.
   const storageErrorMessage = (error: unknown, fallback: string): string =>
-    error instanceof StorageServiceError && error.kind === 'unsupported-server'
-      ? t('toast.serverUnsupported')
-      : fallback;
+    error instanceof StorageServiceError && error.kind === 'session-token-required'
+      ? t('data.restoreSignInAgain')
+      : error instanceof StorageServiceError && error.kind === 'unsupported-server'
+        ? t('toast.serverUnsupported')
+        : fallback;
 
   const handleExportCSV = () => {
     const filename = exportToCSV(sessions, getCurrentRange(), 'tension_arterial_informe', getExportOptions(), language);
@@ -220,8 +222,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       const addedCount = await onImportReadings(pendingImport.result.readings);
       setImportStatus({ kind: 'success', message: t('toast.importedCount', { count: addedCount }) });
       setPendingImport(null);
-    } catch {
-      setImportStatus({ kind: 'error', message: t('toast.storageError') });
+    } catch (error) {
+      setImportStatus({ kind: 'error', message: storageErrorMessage(error, t('toast.storageError')) });
     } finally {
       setRestoreBusy(false);
     }

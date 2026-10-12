@@ -291,4 +291,41 @@ describe('backup merge preview in the import modal', () => {
     expect(host.textContent).toContain('no admite esta operación');
     expect(host.textContent).not.toContain('Tus cambios no se han aplicado');
   });
+
+  it('asks the user to sign out and back in when selecting a backup without an explicit session token', async () => {
+    const preview = vi.fn().mockRejectedValue(new StorageServiceError('session-token-required', 'preview-backup-merge'));
+    const modal = await renderModal(preview, vi.fn());
+    await modal.selectFile();
+
+    expect(host.querySelector('.import-status-box.error')).not.toBeNull();
+    expect(host.textContent).toContain('cierra la sesión y vuelve a entrar');
+    expect(host.textContent).not.toContain('vuelve a previsualizar');
+  });
+
+  it('shows the same actionable token message for protected CSV import without a generic fallback', async () => {
+    const importReadings = vi.fn().mockRejectedValue(new StorageServiceError('session-token-required', 'import-readings'));
+    const modal = await renderModal(vi.fn(), vi.fn(), 'es', importReadings);
+    await modal.selectFile('fecha,hora,sistolica,diastolica,pulsacion\n01/01/2026,08:00,120,80,70\n', 'readings.csv', 'text/csv');
+
+    await modal.click('Confirmar importación');
+
+    expect(host.textContent).toContain('cierra la sesión y vuelve a entrar');
+    expect(host.textContent).not.toContain('Tus cambios no se han aplicado');
+  });
+
+  it.each([
+    ['Combinar mediciones', 'merge'],
+    ['Restaurar y reemplazar', 'replace'],
+  ] as const)('shows the actionable token message when %s is protected', async (button, mode) => {
+    vi.stubGlobal('confirm', vi.fn(() => true));
+    const preview = vi.fn().mockResolvedValue({ addedCount: 1, duplicateCount: 0, conflictCount: 0, previewToken: 'token' });
+    const restore = vi.fn().mockRejectedValue(new StorageServiceError('session-token-required', mode === 'merge' ? 'restore-backup-merge' : 'restore-backup-replace'));
+    const modal = await renderModal(preview, restore);
+    await modal.selectFile();
+
+    await modal.click(button);
+
+    expect(host.textContent).toContain('cierra la sesión y vuelve a entrar');
+    expect(host.textContent).not.toContain('Tus cambios no se han aplicado');
+  });
 });

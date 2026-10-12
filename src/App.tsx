@@ -69,6 +69,8 @@ export function App() {
     // Servidor anterior sin las rutas de combinación/restauración de copias: se
     // avisa de forma específica y accionable en lugar del error genérico.
     const serverUnsupported = error instanceof StorageServiceError && error.kind === 'unsupported-server';
+    const sessionTokenRequired = error instanceof StorageServiceError && error.kind === 'session-token-required';
+    if (sessionTokenRequired) return;
     if (sessionExpired) {
       ++dataLoadVersionRef.current;
       localStorage.removeItem('cta_session_token');
@@ -307,8 +309,6 @@ export function App() {
           };
           const saved = await handleUpdateSettings(updatedSettings);
           if (!saved) return;
-          setNotificationMsg(getTranslation(settings.language, 'toast.manualBackupSuccess'));
-          setTimeout(() => setNotificationMsg(null), 5000);
         },
       });
     } catch (error) {

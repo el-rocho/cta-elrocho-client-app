@@ -2,7 +2,7 @@ import type { BloodPressureReading } from '../types/bloodPressure';
 import type { AppBackupSnapshot } from '../utils/backupService';
 import { getSavedServerUrl } from './serverConfigService';
 import { isReading } from '../utils/readingGuards';
-import { StorageServiceError, isSettings, type StorageOperation, type StorageServiceErrorKind } from './storageService';
+import { StorageServiceError, getRestoreSessionToken, isSettings, type StorageOperation, type StorageServiceErrorKind } from './storageService';
 
 export interface BackupMergeCounts {
   addedCount: number;
@@ -27,12 +27,12 @@ function isCounts(value: unknown): value is BackupMergeCounts {
 
 async function postBackup<T>(operation: StorageOperation, path: string, body: unknown, validate: (value: unknown) => value is T): Promise<T> {
   const base = getSavedServerUrl();
-  const token = localStorage.getItem('cta_session_token');
+  const token = getRestoreSessionToken(operation);
   let response: Response;
   try {
     response = await fetch(`${base ? `${base}/api` : '/api'}${path}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(token ? { 'x-session-token': token } : {}) },
+      headers: { 'Content-Type': 'application/json', 'x-session-token': token },
       credentials: 'include',
       body: JSON.stringify(body),
     });

@@ -150,19 +150,18 @@ describe('storage service real server contracts', () => {
     expect(init.method).toBe('POST');
   });
 
-  it('surfaces the server 403 (missing explicit token) as forbidden, not a logout-triggering 401', async () => {
-    // Sin token guardado el servidor responde 403; la sesión por cookie puede ser válida.
+  it('requires the explicit session token before import and never sends a doomed request', async () => {
     vi.stubGlobal('localStorage', {
       getItem: vi.fn((key: string) => key === 'cta_server_url' ? 'https://server.test' : null),
       setItem: vi.fn(),
       removeItem: vi.fn(),
     });
-    const fetchMock = vi.fn().mockResolvedValue(response({ error: 'Token explícito requerido para importar o restaurar' }, { ok: false, status: 403 }));
+    const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
 
-    await expect(importReadingsToServer([reading])).rejects.toMatchObject({ kind: 'forbidden', status: 403, operation: 'import-readings' });
-
-    const [, init] = fetchMock.mock.calls[0];
-    expect(init.headers).not.toHaveProperty('x-session-token');
+    await expect(importReadingsToServer([reading])).rejects.toMatchObject({
+      kind: 'session-token-required', operation: 'import-readings',
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

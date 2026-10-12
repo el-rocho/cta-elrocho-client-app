@@ -32,7 +32,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   lastFullBackupTimestamp: undefined,
 };
 
-export type StorageServiceErrorKind = 'network' | 'unauthorized' | 'forbidden' | 'http' | 'invalid-response' | 'unsupported-server';
+export type StorageServiceErrorKind = 'network' | 'unauthorized' | 'forbidden' | 'http' | 'invalid-response' | 'unsupported-server' | 'session-token-required';
 export type StorageOperation =
   | 'fetch-readings'
   | 'add-reading'
@@ -63,6 +63,12 @@ export class StorageServiceError extends Error {
     this.status = status;
     this.cause = cause;
   }
+}
+
+export function getRestoreSessionToken(operation: StorageOperation): string {
+  const token = localStorage.getItem('cta_session_token');
+  if (!token) throw new StorageServiceError('session-token-required', operation);
+  return token;
 }
 
 function getApiBase(): string {
@@ -206,10 +212,11 @@ function isImportResult(value: unknown): value is ImportResult {
     && isReadings(value.readings);
 }
 
-export function importReadingsToServer(imported: Omit<BloodPressureReading, 'id'>[]): Promise<ImportResult> {
+export async function importReadingsToServer(imported: Omit<BloodPressureReading, 'id'>[]): Promise<ImportResult> {
   const apiBase = getApiBase();
+  const token = getRestoreSessionToken('import-readings');
   return requestJson('import-readings', `${apiBase}/readings/import`, {
-    method: 'POST', headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'x-session-token': token },
     credentials: 'include', body: JSON.stringify(imported),
   }, isImportResult);
 }

@@ -11,6 +11,17 @@ const snapshot = createBackupSnapshot([{
 afterEach(() => { vi.unstubAllGlobals(); });
 
 describe('server-backed backup merge', () => {
+  it('requires the explicit session token before previewing and never sends a doomed request', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    vi.stubGlobal('localStorage', { getItem: () => null });
+
+    await expect(previewBackupMerge(snapshot)).rejects.toMatchObject({
+      kind: 'session-token-required', operation: 'preview-backup-merge',
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('previews without changing readings or settings and returns the server token', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({
       addedCount: 1, duplicateCount: 2, conflictCount: 3, previewToken: 'opaque-token',
@@ -26,14 +37,25 @@ describe('server-backed backup merge', () => {
     });
   });
 
+  it('requires the explicit session token before committing a merge and never sends a doomed request', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    vi.stubGlobal('localStorage', { getItem: () => null });
+
+    await expect(restoreBackupMerge(snapshot, 'opaque-token')).rejects.toMatchObject({
+      kind: 'session-token-required', operation: 'restore-backup-merge',
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('commits only with the preview token and returns authoritative counts and readings', async () => {
     const response = { addedCount: 1, duplicateCount: 2, conflictCount: 3, readings: snapshot.readings };
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => response });
     vi.stubGlobal('fetch', fetchMock);
-    vi.stubGlobal('localStorage', { getItem: () => null });
+    vi.stubGlobal('localStorage', { getItem: (key: string) => key === 'cta_session_token' ? 'session-123' : null });
     expect(await restoreBackupMerge(snapshot, 'opaque-token')).toEqual(response);
     expect(fetchMock).toHaveBeenCalledWith('/api/backups/restore-merge', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'x-session-token': 'session-123' }, credentials: 'include',
       body: JSON.stringify({ snapshot, previewToken: 'opaque-token' }),
     });
   });
@@ -52,7 +74,7 @@ describe('server-backed backup merge', () => {
   it('rejects a stale token/server failure without fallback writes', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 409 });
     vi.stubGlobal('fetch', fetchMock);
-    vi.stubGlobal('localStorage', { getItem: () => null });
+    vi.stubGlobal('localStorage', { getItem: () => 'session' });
     await expect(restoreBackupMerge(snapshot, 'expired')).rejects.toThrow();
     expect(fetchMock).toHaveBeenCalledOnce();
   });
@@ -77,7 +99,7 @@ describe('server-backed backup merge', () => {
       status: 200,
       json: async () => ({ addedCount: 1, duplicateCount: 0, conflictCount: 0, readings: [{ id: 'bad' }] }),
     }));
-    vi.stubGlobal('localStorage', { getItem: () => null });
+    vi.stubGlobal('localStorage', { getItem: () => 'session' });
 
     await expect(restoreBackupMerge(snapshot, 'token')).rejects.toMatchObject({
       kind: 'invalid-response', operation: 'restore-backup-merge',
@@ -86,6 +108,17 @@ describe('server-backed backup merge', () => {
 });
 
 describe('atomic backup replacement', () => {
+  it('requires the explicit session token before replacing and never sends a doomed request', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    vi.stubGlobal('localStorage', { getItem: () => null });
+
+    await expect(restoreBackupReplace(snapshot)).rejects.toMatchObject({
+      kind: 'session-token-required', operation: 'restore-backup-replace',
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('sends the whole snapshot to the single atomic replace endpoint with the explicit token', async () => {
     const response = { readings: [{ ...snapshot.readings[0], notes: null }], settings: DEFAULT_SETTINGS };
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => response });
@@ -102,8 +135,8 @@ describe('atomic backup replacement', () => {
     });
   });
 
-  it('rejects a 403 (missing explicit token) as forbidden so the caller never fakes a restore', async () => {
-    vi.stubGlobal('localStorage', { getItem: () => null });
+  it('rejects a server-side 403 as forbidden when an explicit token was sent', async () => {
+    vi.stubGlobal('localStorage', { getItem: () => 'session' });
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 403 }));
 
     await expect(restoreBackupReplace(snapshot)).rejects.toMatchObject({
