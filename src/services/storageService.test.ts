@@ -85,8 +85,9 @@ describe('storage service failures', () => {
   });
 
   it('treats a 403 as forbidden — never as an expired session', async () => {
-    // El servidor devuelve 403 cuando falta el token explícito que exige en
-    // import/restaurar, o por permisos; la sesión puede seguir siendo válida.
+    // El servidor reserva el 403 para permisos (rutas de administración) y para una
+    // petición sin el token explícito; el cliente siempre lo envía, así que este
+    // caso es de permisos y la sesión puede seguir siendo válida.
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response({ error: 'Token explícito requerido' }, { ok: false, status: 403 })));
 
     const error = await saveSettingsToServer(DEFAULT_SETTINGS).catch((caught) => caught);
@@ -162,6 +163,45 @@ describe('storage service real server contracts', () => {
     await expect(importReadingsToServer([reading])).rejects.toMatchObject({
       kind: 'session-token-required', operation: 'import-readings',
     });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  // El servidor exige el token explícito en toda la API de datos: la cookie viaja
+  // sola y no distingue una petición propia de otra inducida por una página ajena.
+  const dataOperations: [string, () => Promise<unknown>][] = [
+    ['fetch-readings', () => fetchReadingsFromServer()],
+    ['add-reading', () => addReadingToServer(reading)],
+    ['update-reading', () => updateReadingOnServer(reading)],
+    ['update-medication-context', () => updateMedicationContextForAllReadings(true)],
+    ['delete-reading', () => deleteReadingFromServer(reading.id)],
+    ['delete-session', () => deleteSessionFromServer([reading.id])],
+    ['clear-readings', () => clearAllReadingsOnServer()],
+    ['reset-demo', () => resetDemoDataOnServer()],
+    ['import-readings', () => importReadingsToServer([reading])],
+    ['fetch-settings', () => fetchSettingsFromServer()],
+    ['save-settings', () => saveSettingsToServer(DEFAULT_SETTINGS)],
+  ];
+
+  it.each(dataOperations)('sends the explicit session token on every data call (%s)', async (_operation, call) => {
+    const fetchMock = vi.fn().mockResolvedValue(response({ error: 'failed' }, { ok: false, status: 500 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(call()).rejects.toBeInstanceOf(StorageServiceError);
+
+    const [, init] = fetchMock.mock.calls[0];
+    expect(init.headers).toMatchObject({ 'x-session-token': 'session-token' });
+  });
+
+  it.each(dataOperations)('never reaches the network without a session token (%s)', async (operation, call) => {
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn((key: string) => key === 'cta_server_url' ? 'https://server.test' : null),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+    });
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(call()).rejects.toMatchObject({ kind: 'session-token-required', operation });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });

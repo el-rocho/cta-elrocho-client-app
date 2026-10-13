@@ -65,7 +65,11 @@ export class StorageServiceError extends Error {
   }
 }
 
-export function getRestoreSessionToken(operation: StorageOperation): string {
+// Toda la API de datos exige el token explícito: la cookie viaja sola y no
+// distingue una petición del propio usuario de otra inducida por una página
+// ajena. Sin token guardado no se llega a la red y la interfaz pide volver a
+// iniciar sesión.
+export function getSessionToken(operation: StorageOperation): string {
   const token = localStorage.getItem('cta_session_token');
   if (!token) throw new StorageServiceError('session-token-required', operation);
   return token;
@@ -76,11 +80,8 @@ function getApiBase(): string {
   return serverUrl ? `${serverUrl}/api` : '/api';
 }
 
-function getAuthHeaders(extraHeaders: Record<string, string> = {}): Record<string, string> {
-  const headers: Record<string, string> = { ...extraHeaders };
-  const token = localStorage.getItem('cta_session_token');
-  if (token) headers['x-session-token'] = token;
-  return headers;
+function authHeaders(operation: StorageOperation, extraHeaders: Record<string, string> = {}): Record<string, string> {
+  return { ...extraHeaders, 'x-session-token': getSessionToken(operation) };
 }
 
 export function isSettings(value: unknown): value is AppSettings {
@@ -144,17 +145,17 @@ async function requestJson<T>(
   return data;
 }
 
-export function fetchReadingsFromServer(): Promise<BloodPressureReading[]> {
+export async function fetchReadingsFromServer(): Promise<BloodPressureReading[]> {
   const apiBase = getApiBase();
   return requestJson('fetch-readings', freshApiUrl(`${apiBase}/readings`), {
-    headers: getAuthHeaders(), credentials: 'include', cache: 'no-store',
+    headers: authHeaders('fetch-readings'), credentials: 'include', cache: 'no-store',
   }, isReadings);
 }
 
-export function addReadingToServer(newReading: Omit<BloodPressureReading, 'id'>): Promise<BloodPressureReading> {
+export async function addReadingToServer(newReading: Omit<BloodPressureReading, 'id'>): Promise<BloodPressureReading> {
   const apiBase = getApiBase();
   return requestJson('add-reading', `${apiBase}/readings`, {
-    method: 'POST', headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+    method: 'POST', headers: authHeaders('add-reading', { 'Content-Type': 'application/json' }),
     credentials: 'include', body: JSON.stringify(newReading),
   }, isReading);
 }
@@ -162,7 +163,7 @@ export function addReadingToServer(newReading: Omit<BloodPressureReading, 'id'>)
 export async function updateReadingOnServer(updatedReading: BloodPressureReading): Promise<void> {
   const apiBase = getApiBase();
   await request('update-reading', `${apiBase}/readings/${updatedReading.id}`, {
-    method: 'PUT', headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+    method: 'PUT', headers: authHeaders('update-reading', { 'Content-Type': 'application/json' }),
     credentials: 'include', body: JSON.stringify(updatedReading),
   });
 }
@@ -170,7 +171,7 @@ export async function updateReadingOnServer(updatedReading: BloodPressureReading
 export async function updateMedicationContextForAllReadings(takesAntihypertensiveMedication: boolean): Promise<void> {
   const apiBase = getApiBase();
   await request('update-medication-context', `${apiBase}/readings/medication-context`, {
-    method: 'PUT', headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+    method: 'PUT', headers: authHeaders('update-medication-context', { 'Content-Type': 'application/json' }),
     credentials: 'include', body: JSON.stringify({ takesAntihypertensiveMedication }),
   });
 }
@@ -178,14 +179,14 @@ export async function updateMedicationContextForAllReadings(takesAntihypertensiv
 export async function deleteReadingFromServer(id: string): Promise<void> {
   const apiBase = getApiBase();
   await request('delete-reading', `${apiBase}/readings/${id}`, {
-    method: 'DELETE', headers: getAuthHeaders(), credentials: 'include',
+    method: 'DELETE', headers: authHeaders('delete-reading'), credentials: 'include',
   });
 }
 
 export async function deleteSessionFromServer(readingIds: string[]): Promise<void> {
   const apiBase = getApiBase();
   await request('delete-session', `${apiBase}/sessions/delete`, {
-    method: 'POST', headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+    method: 'POST', headers: authHeaders('delete-session', { 'Content-Type': 'application/json' }),
     credentials: 'include', body: JSON.stringify({ readingIds }),
   });
 }
@@ -193,14 +194,14 @@ export async function deleteSessionFromServer(readingIds: string[]): Promise<voi
 export async function clearAllReadingsOnServer(): Promise<void> {
   const apiBase = getApiBase();
   await request('clear-readings', `${apiBase}/readings/all/confirm`, {
-    method: 'DELETE', headers: getAuthHeaders(), credentials: 'include',
+    method: 'DELETE', headers: authHeaders('clear-readings'), credentials: 'include',
   });
 }
 
-export function resetDemoDataOnServer(): Promise<BloodPressureReading[]> {
+export async function resetDemoDataOnServer(): Promise<BloodPressureReading[]> {
   const apiBase = getApiBase();
   return requestJson('reset-demo', `${apiBase}/readings/reset-demo`, {
-    method: 'POST', headers: getAuthHeaders(), credentials: 'include',
+    method: 'POST', headers: authHeaders('reset-demo'), credentials: 'include',
   }, isReadings);
 }
 
@@ -214,9 +215,8 @@ function isImportResult(value: unknown): value is ImportResult {
 
 export async function importReadingsToServer(imported: Omit<BloodPressureReading, 'id'>[]): Promise<ImportResult> {
   const apiBase = getApiBase();
-  const token = getRestoreSessionToken('import-readings');
   return requestJson('import-readings', `${apiBase}/readings/import`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json', 'x-session-token': token },
+    method: 'POST', headers: authHeaders('import-readings', { 'Content-Type': 'application/json' }),
     credentials: 'include', body: JSON.stringify(imported),
   }, isImportResult);
 }
@@ -224,7 +224,7 @@ export async function importReadingsToServer(imported: Omit<BloodPressureReading
 export async function fetchSettingsFromServer(): Promise<AppSettings> {
   const apiBase = getApiBase();
   const data = await requestJson('fetch-settings', freshApiUrl(`${apiBase}/settings`), {
-    headers: getAuthHeaders(), credentials: 'include', cache: 'no-store',
+    headers: authHeaders('fetch-settings'), credentials: 'include', cache: 'no-store',
   }, isSettings);
   return {
     ...DEFAULT_SETTINGS,
@@ -236,7 +236,7 @@ export async function fetchSettingsFromServer(): Promise<AppSettings> {
 export async function saveSettingsToServer(settings: AppSettings): Promise<void> {
   const apiBase = getApiBase();
   await request('save-settings', `${apiBase}/settings`, {
-    method: 'POST', headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+    method: 'POST', headers: authHeaders('save-settings', { 'Content-Type': 'application/json' }),
     credentials: 'include', body: JSON.stringify(settings),
   });
 }
