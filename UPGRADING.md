@@ -17,11 +17,20 @@ Desinstalar el cliente no borra SQLite, pero elimina esos datos locales y puede 
 1. Consulta la guía de actualización de la versión correspondiente del servidor.
 2. Haz una copia de su directorio persistente `data`.
 3. Lee las notas de la versión del cliente:
+   - [Actualización a 1.7.0](docs/actualizaciones/v1.7.0.md)
    - [Actualización a 1.6.1](docs/actualizaciones/v1.6.1.md)
    - [Actualización a 1.6.0](docs/actualizaciones/v1.6.0.md)
    - [Versiones publicadas en GitHub](https://github.com/el-rocho/cta-elrocho-client-app/releases)
 
-## Aviso especial para el cliente Android 1.6.1
+## Avisos especiales de instalación
+
+### Cliente Android 1.7.0
+
+El APK `v1.7.0` se instala **encima** de `1.6.1` sin desinstalar: la firma no ha cambiado. Si vienes de `1.6.0` o de una versión anterior, sigue primero el aviso de `1.6.1` que aparece más abajo.
+
+Recuerda además que el servidor `1.7.0` no admite un cliente anterior: actualiza el servidor y este cliente juntos.
+
+### Cliente Android 1.6.1
 
 Para instalar el APK `v1.6.1` es necesario desinstalar primero la versión anterior. Android y Obtainium pueden mostrar el error **Conflict** si se intenta actualizar directamente debido a un cambio en el certificado de firma del APK.
 
@@ -31,7 +40,7 @@ Antes de desinstalar, anota la dirección del servidor. Después instala `v1.6.1
 
 1. Actualiza el servidor autoalojado.
 2. Comprueba desde el navegador que inicia correctamente y muestra el historial.
-3. Sigue las notas específicas de la versión para instalar el nuevo APK mediante Obtainium o GitHub Releases. Para `v1.6.1`, desinstala primero la versión anterior como se indica arriba.
+3. Sigue las notas específicas de la versión para instalar el nuevo APK mediante Obtainium o GitHub Releases. Desde `v1.6.1`, instálalo encima sin desinstalar; si vienes de `1.6.0` o anterior, sigue primero el aviso de `v1.6.1` que aparece arriba.
 4. Comprueba la dirección del servidor, la sesión y las mediciones.
 
 El servidor y el cliente deben mantenerse en versiones compatibles. No utilices de forma permanente un cliente nuevo con un servidor antiguo: las nuevas rutas, campos o validaciones pueden no estar disponibles.

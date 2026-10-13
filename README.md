@@ -5,9 +5,9 @@
 # Control Tensión Arterial (Cliente Móvil Android & PWA) 🩺📱
 
 ![Built with Vibe Coding](https://img.shields.io/badge/Built%20with-Vibe%20Coding%20%26%20AI-7c3aed?style=for-the-badge&logo=sparkles)
-![Android APK](https://img.shields.io/badge/Android-APK%20Nativa%20v1.6.1-3DDC84?style=for-the-badge&logo=android)
+![Android APK](https://img.shields.io/badge/Android-APK%20Nativa%20v1.7.0-3DDC84?style=for-the-badge&logo=android)
 ![PWA Ready](https://img.shields.io/badge/Web-PWA%20Instalable-0284c7?style=for-the-badge&logo=pwa)
-![Obtainium Compatible](https://img.shields.io/badge/Obtainium-Releases%20v1.6.1-2563eb?style=for-the-badge&logo=github)
+![Obtainium Compatible](https://img.shields.io/badge/Obtainium-Releases%20v1.7.0-2563eb?style=for-the-badge&logo=github)
 ![Licencia](https://img.shields.io/badge/Licencia-MIT-blue?style=for-the-badge)
 
 Aplicación móvil nativa Android (APK) y PWA web diseñada como cliente dedicado para conectar con el servidor autoalojado [**Control Tensión Arterial (cta-elrocho-selfhosted)**](https://github.com/el-rocho/cta-elrocho-selfhosted).
@@ -34,7 +34,7 @@ El proyecto **Control Tensión Arterial** dispone de tres aplicaciones complemen
 
 - **Conexión Dinámica a Servidor**: Configura y prueba fácilmente la dirección IP o URL de tu servidor autoalojado (ej. `http://192.168.1.50:3000` o `https://salud.mi-casa.local`).
 - **Autenticación Completa & 2FA TOTP**: Inicio de sesión multiusuario, creación de cuenta de administrador y validación de 2 factores (Google Authenticator, Aegis, Authy, etc.).
-- **Persistencia de Sesión Segura**: Envío automático de cabecera `X-Session-Token` para evitar cierres de sesión involuntarios en dispositivos móviles.
+- **Persistencia de Sesión Segura**: Envío automático de la cabecera `X-Session-Token`, que el servidor exige en toda su API de datos, para evitar cierres de sesión involuntarios en dispositivos móviles.
 - **Estado del Servidor**: Indicador de disponibilidad en la cabecera y panel detallado de recursos, base de datos, actividad y copias para usuarios administradores.
 - **Tres Referencias Clínicas**: Etiquetas y avisos configurables según `ESC 2024`, `AHA/ACC 2025` o `ISH 2020`, sin modificar las mediciones.
 - **Objetivos Terapéuticos**: Valores recomendados por guía y edad para usuarios medicados, editables según la indicación del facultativo.
@@ -89,6 +89,19 @@ Antes de instalar una nueva versión, consulta la **[guía de actualización](UP
 4. Pulsa **Probar y Conectar**. La dirección se guardará de forma permanente y la app se conectará al instante.
 
 > Si utilizas una dirección `http://` local, realiza la conexión desde el APK Android. Para usar la PWA de GitHub Pages, configura el servidor con HTTPS y un certificado válido.
+
+### Orígenes que el servidor acepta
+
+El servidor entrega sus respuestas sólo a los orígenes que reconoce, porque las peticiones viajan con credenciales. Ya vienen admitidos los de esta aplicación —el APK y la PWA empaquetada, que se sirven a sí mismos desde `https://localhost`, y la PWA oficial publicada en GitHub Pages— y los puertos de desarrollo `5173-5175`.
+
+Si publicas **tu propia copia** en otro dominio o puerto, el servidor mostrará un fallo de conexión aunque esté operativo: el navegador está descartando sus respuestas. Hay que declarar el origen en el servidor, en la variable `CORS_ORIGINS` (varios orígenes separados por comas, sin barra final) y reiniciarlo:
+
+```yaml
+environment:
+  - CORS_ORIGINS=https://mi-pwa.midominio.com
+```
+
+El servidor exige además la cabecera `X-Session-Token` en toda su API de datos, algo que esta aplicación ya hace automáticamente; si guardas el token en el dispositivo, la sesión se mantiene sin volver a introducir la contraseña.
 
 ---
 
