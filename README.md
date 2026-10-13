@@ -1,131 +1,130 @@
 <p align="center">
-  <img src="public/logo-day.png" alt="Logo Control Tensión Arterial Client App" width="160" height="160" />
+  <img src="public/logo-day.png" alt="Control Tensión Arterial" width="160" height="160" />
 </p>
 
-# Control Tensión Arterial (Cliente Móvil Android & PWA) 🩺📱
+# Control Tensión Arterial — Cliente Android y PWA
 
-![Built with Vibe Coding](https://img.shields.io/badge/Built%20with-Vibe%20Coding%20%26%20AI-7c3aed?style=for-the-badge&logo=sparkles)
-![Android APK](https://img.shields.io/badge/Android-APK%20Nativa%20v1.7.0-3DDC84?style=for-the-badge&logo=android)
-![PWA Ready](https://img.shields.io/badge/Web-PWA%20Instalable-0284c7?style=for-the-badge&logo=pwa)
-![Obtainium Compatible](https://img.shields.io/badge/Obtainium-Releases%20v1.7.0-2563eb?style=for-the-badge&logo=github)
-![Licencia](https://img.shields.io/badge/Licencia-MIT-blue?style=for-the-badge)
+![Android](https://img.shields.io/badge/Android-APK-3DDC84?style=flat-square&logo=android&logoColor=white)
+![PWA](https://img.shields.io/badge/Web-PWA-0284c7?style=flat-square&logo=pwa&logoColor=white)
+![Servidor](https://img.shields.io/badge/Conexión-Servidor%20autoalojado-2496ED?style=flat-square&logo=docker&logoColor=white)
+![Idiomas](https://img.shields.io/badge/Idiomas-ES%20%7C%20EN-6366f1?style=flat-square)
+![Licencia](https://img.shields.io/badge/Licencia-MIT-blue?style=flat-square)
 
-Aplicación móvil nativa Android (APK) y PWA web diseñada como cliente dedicado para conectar con el servidor autoalojado [**Control Tensión Arterial (cta-elrocho-selfhosted)**](https://github.com/el-rocho/cta-elrocho-selfhosted).
+Cliente Android y PWA para utilizar desde un teléfono o una tableta una instalación de [Control Tensión Arterial autoalojada](https://github.com/el-rocho/cta-elrocho-selfhosted).
 
-Proporciona la misma experiencia cuidada, bilingüe y completa del panel web autoalojado directamente desde tu teléfono móvil o tablet, con selector dinámico de IP y soporte nativo para exportar e imprimir informes PDF/CSV en Android.
+Permite configurar la dirección del servidor y ofrece la experiencia completa de registro, análisis, copias e informes. Esta edición no almacena una base de datos independiente: trabaja con la cuenta y los datos del servidor.
 
-> ✨ **Metodología de Desarrollo**: Este proyecto ha sido conceptualizado, diseñado y guiado mediante **Vibe Coding**, utilizando asistencia avanzada de Inteligencia Artificial para la generación de código y arquitectura.
+> [!NOTE]
+> Necesitas una instalación operativa de `cta-elrocho-selfhosted`. Si buscas una aplicación sin servidor, utiliza la edición individual offline.
 
 ---
 
-## 💡 Ecosistema de Aplicaciones: ¿Qué versión elegir?
+## Ecosistema: elige la edición adecuada
 
-El proyecto **Control Tensión Arterial** dispone de tres aplicaciones complementarias adaptadas a cada necesidad:
-
-| Aplicación | Repositorio GitHub | Descripción y Uso |
+| Edición | Cuándo elegirla | Repositorio |
 | :--- | :--- | :--- |
-| 📱 **Versión Individual Móvil (Offline)** | [**cta-elrocho**](https://github.com/el-rocho/cta-elrocho) | Ideal para uso personal en un único teléfono. Funciona **100% offline**, sin cuentas, sin servidor y guardando todos los datos en el almacenamiento interno privado del dispositivo. |
-| 🐳 **Servidor Autoalojado (Docker)** | [**cta-elrocho-selfhosted**](https://github.com/el-rocho/cta-elrocho-selfhosted) | Ideal si deseas desplegar la app en tu servidor privado o NAS para gestionar **varios perfiles familiares (~10 usuarios)** con base de datos SQLite y **2FA TOTP**. |
-| 🚀 **Cliente Servidor (Android & PWA)** | **[cta-elrocho-client-app](https://github.com/el-rocho/cta-elrocho-client-app)** *(Este repo)* | App cliente para conectar al servidor autoalojado introduciendo la IP (`http://192.168.1.x:3000`), con interfaz nativa Android y exportación PDF/CSV. |
+| **Individual offline** | Una persona, un dispositivo y funcionamiento sin servidor ni conexión. | [cta-elrocho](https://github.com/el-rocho/cta-elrocho) |
+| **Servidor autoalojado** | Varios usuarios, datos centralizados y administración familiar en un servidor o NAS. | [cta-elrocho-selfhosted](https://github.com/el-rocho/cta-elrocho-selfhosted) |
+| **Cliente para servidor** *(esta edición)* | Acceso desde Android o PWA a una instalación autoalojada existente. | [cta-elrocho-client-app](https://github.com/el-rocho/cta-elrocho-client-app) |
 
 ---
 
-## ⚡ Características Principales
+## Funciones principales
 
-- **Conexión Dinámica a Servidor**: Configura y prueba fácilmente la dirección IP o URL de tu servidor autoalojado (ej. `http://192.168.1.50:3000` o `https://salud.mi-casa.local`).
-- **Autenticación Completa & 2FA TOTP**: Inicio de sesión multiusuario, creación de cuenta de administrador y validación de 2 factores (Google Authenticator, Aegis, Authy, etc.).
-- **Persistencia de Sesión Segura**: Envío automático de la cabecera `X-Session-Token`, que el servidor exige en toda su API de datos, para evitar cierres de sesión involuntarios en dispositivos móviles.
-- **Estado del Servidor**: Indicador de disponibilidad en la cabecera y panel detallado de recursos, base de datos, actividad y copias para usuarios administradores.
-- **Tres Referencias Clínicas**: Etiquetas y avisos configurables según `ESC 2024`, `AHA/ACC 2025` o `ISH 2020`, sin modificar las mediciones.
-- **Objetivos Terapéuticos**: Valores recomendados por guía y edad para usuarios medicados, editables según la indicación del facultativo.
-- **Exportación e Informes Nativa Android**: Genera PDF y CSV con estadísticas, métricas cardiovasculares, diagrama de dispersión PAS/PAD y desglose de tomas efectivas y descartadas, guardándolos mediante `@capacitor/filesystem` y compartiéndolos con `@capacitor/share`.
-- **Importación MyTherapy**: Detecta el formato y reconstruye las mediciones desde los registros separados de sistólica, diastólica y pulso.
-- **Filtro Opcional de Acomodación**: Agrupa tomas consecutivas y calcula un único resultado efectivo; en sesiones largas puede conservar todas las tomas o una única toma estable.
-- **Gráficos de Tendencias**: Evolución de hasta un año, estadísticas del periodo, presión de pulso, presión arterial media estimada, carga de presión y comparación de medias diarias en cuatro semanas.
-- **Soporte Bilingüe y Modo Oscuro**: Interfaz en 🇪🇸 Español y 🇬🇧 Inglés, adaptable a modo oscuro y claro.
+- Configuración y comprobación de la URL del servidor.
+- Inicio de sesión multiusuario y autenticación 2FA TOTP.
+- Sesión persistente mediante la cabecera `X-Session-Token`.
+- Registro de presión sistólica, presión diastólica, pulso, brazo y notas.
+- Referencias configurables: `ESC 2024`, `AHA/ACC 2025` e `ISH 2020`.
+- Objetivos terapéuticos orientativos y editables según la indicación profesional.
+- Historial, estadísticas y gráficas de evolución de hasta un año.
+- Filtro opcional de acomodación para agrupar tomas consecutivas y obtener un resultado efectivo por sesión.
+- Informes PDF y CSV, copias completas e importación de datos de MyTherapy.
+- Guardado y uso compartido nativo de archivos en Android.
+- Interfaz en español e inglés, con temas claro y oscuro.
+- Panel de estado y diagnóstico para administradores.
 
-Las reglas clínicas completas, incluido el filtro y sus límites, están documentadas en la [matriz clínica de la versión 1.6.0](docs/reglas-clinicas-v1.6.0.md).
-
----
-
-## 📲 Instalación y Actualizaciones (Obtainium, APK y PWA)
-
-Las compilaciones oficiales del APK y el despliegue de la PWA se generan automáticamente mediante **GitHub Actions**.
-
-### 1. 📱 Instalación con Obtainium (recomendada en Android)
-
-La app es 100% compatible con **[Obtainium](https://github.com/ImranR98/Obtainium)**. Escanea este código QR desde Obtainium en tu teléfono Android o añade manualmente la URL del repositorio (`https://github.com/el-rocho/cta-elrocho-client-app`):
-
-<p align="center">
-  <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=https://github.com/el-rocho/cta-elrocho-client-app" alt="Código QR para Obtainium - cta-elrocho-client-app" width="160" height="160" />
-  <br />
-  <sub><b>Escanea desde Obtainium para instalar y recibir actualizaciones</b></sub>
-</p>
-
-### 2. 📥 Descarga manual del APK (GitHub Releases)
-
-1. Accede a **[Releases del Repositorio](https://github.com/el-rocho/cta-elrocho-client-app/releases)**.
-2. Descarga el archivo `control-tension-client-app.apk`.
-3. Instala el APK en tu dispositivo Android.
-
-Antes de instalar una nueva versión, consulta la **[guía de actualización](UPGRADING.md)** y las notas de la versión correspondiente. Actualiza conjuntamente el cliente y el servidor autoalojado.
-
-### 3. 🌐 Uso como PWA (navegador web / pantalla de inicio)
-
-- También puedes acceder a la versión PWA a través de GitHub Pages e instalarla en la pantalla de inicio de tu navegador iOS/Android.
+Las reglas clínicas y el funcionamiento del filtro se describen en la [matriz clínica](docs/reglas-clinicas-v1.6.0.md).
 
 > [!IMPORTANT]
-> **Limitación al conectar con servidores HTTP locales:** la PWA alojada en GitHub Pages utiliza HTTPS. Por seguridad, los navegadores bloquean las conexiones desde una página HTTPS hacia un servidor local HTTP por considerarlas contenido mixto.
->
-> Para conectarte a un servidor HTTP de tu red local, utiliza la aplicación Android (APK). La PWA podrá conectarse solamente si el servidor está disponible mediante HTTPS con un certificado válido. Abrir o autorizar manualmente la dirección HTTP en otra pestaña del navegador no elimina esta restricción.
+> Las clasificaciones y objetivos son informativos. La aplicación no sustituye el diagnóstico ni las indicaciones de un profesional sanitario.
 
 ---
 
-## 🚀 Conexión con el Servidor Autoalojado
+## Instalación y actualizaciones
 
-1. Asegúrate de tener en ejecución el servidor [**cta-elrocho-selfhosted**](https://github.com/el-rocho/cta-elrocho-selfhosted) en tu red local o servidor (ej. puerto 3000).
-2. Abre la aplicación **Control Tensión Server**.
-3. En la pantalla inicial de configuración, introduce la dirección de tu servidor (ejemplo: `http://192.168.1.100:3000`).
-4. Pulsa **Probar y Conectar**. La dirección se guardará de forma permanente y la app se conectará al instante.
+Las compilaciones oficiales se generan mediante GitHub Actions.
 
-> Si utilizas una dirección `http://` local, realiza la conexión desde el APK Android. Para usar la PWA de GitHub Pages, configura el servidor con HTTPS y un certificado válido.
+### Obtainium — recomendado en Android
 
-### Orígenes que el servidor acepta
+Añade en [Obtainium](https://github.com/ImranR98/Obtainium) la dirección del repositorio:
 
-El servidor entrega sus respuestas sólo a los orígenes que reconoce, porque las peticiones viajan con credenciales. Ya vienen admitidos los de esta aplicación —el APK y la PWA empaquetada, que se sirven a sí mismos desde `https://localhost`, y la PWA oficial publicada en GitHub Pages— y los puertos de desarrollo `5173-5175`.
+```text
+https://github.com/el-rocho/cta-elrocho-client-app
+```
 
-Si publicas **tu propia copia** en otro dominio o puerto, el servidor mostrará un fallo de conexión aunque esté operativo: el navegador está descartando sus respuestas. Hay que declarar el origen en el servidor, en la variable `CORS_ORIGINS` (varios orígenes separados por comas, sin barra final) y reiniciarlo:
+<p align="center">
+  <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=https://github.com/el-rocho/cta-elrocho-client-app" alt="Código QR de cta-elrocho-client-app para Obtainium" width="160" height="160" />
+</p>
+
+### APK
+
+1. Abre [GitHub Releases](https://github.com/el-rocho/cta-elrocho-client-app/releases).
+2. Descarga `control-tension-client-app.apk`.
+3. Instala el archivo en el dispositivo Android.
+
+Antes de actualizar, consulta [UPGRADING.md](UPGRADING.md) y las notas de la versión. Mantén cliente y servidor en versiones compatibles.
+
+### PWA
+
+La PWA puede instalarse desde el navegador y conectarse a servidores publicados mediante HTTPS con un certificado válido.
+
+> [!WARNING]
+> La PWA oficial se sirve mediante HTTPS. Los navegadores bloquean su conexión a servidores locales `http://` por contenido mixto. Para un servidor HTTP de la red local, utiliza el APK Android.
+
+---
+
+## Conexión con el servidor
+
+1. Inicia `cta-elrocho-selfhosted`.
+2. Abre **Control Tensión Arterial — Cliente**.
+3. Introduce la URL completa, por ejemplo `http://192.168.1.50:3000`.
+4. Pulsa **Probar y conectar** e inicia sesión.
+
+El APK y la PWA oficial ya están admitidos por el servidor. Si publicas una copia del cliente en otro dominio o puerto, añade su origen —sin barra final— a `CORS_ORIGINS` y reinicia el servidor:
 
 ```yaml
 environment:
   - CORS_ORIGINS=https://mi-pwa.midominio.com
 ```
 
-El servidor exige además la cabecera `X-Session-Token` en toda su API de datos, algo que esta aplicación ya hace automáticamente; si guardas el token en el dispositivo, la sesión se mantiene sin volver a introducir la contraseña.
+---
+
+## Datos y copias
+
+Las mediciones, preferencias y copias pertenecen a la cuenta del servidor. Desde el cliente puedes:
+
+- generar informes PDF y CSV;
+- crear y restaurar copias completas;
+- importar archivos compatibles y datos de MyTherapy;
+- compartir archivos mediante las funciones nativas de Android.
+
+Para una copia integral de toda la instalación, respalda también el directorio `data` del servidor con el servicio detenido.
 
 ---
 
-## 🛠️ Desarrollo Local y Compilación
+## Desarrollo local
 
 ```bash
-# 1. Clonar el repositorio e instalar dependencias
-git clone https://github.com/el-rocho/cta-elrocho-client-app.git
-cd cta-elrocho-client-app
 npm install
-
-# 2. Iniciar servidor de desarrollo web
 npm run dev
-
-# 3. Compilar proyecto web y sincronizar con Android nativo (Capacitor)
 npm run build
 npx cap sync android
-
-# 4. Abrir en Android Studio para compilar APK manualmente
 npx cap open android
 ```
 
 ---
 
-## 📜 Licencia
+## Licencia
 
-Este proyecto está bajo la Licencia MIT. Consulta el archivo `LICENSE` para más información.
+Distribuido bajo la Licencia MIT.
