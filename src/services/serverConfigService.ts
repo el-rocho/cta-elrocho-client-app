@@ -46,10 +46,6 @@ export function saveServerUrl(url: string): string {
   return cleanUrl;
 }
 
-export function clearServerUrl(): void {
-  localStorage.removeItem(SERVER_URL_KEY);
-}
-
 export interface ServerConnectionResult {
   success: boolean;
   hasAdmin?: boolean;
