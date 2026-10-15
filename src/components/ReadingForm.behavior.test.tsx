@@ -49,11 +49,11 @@ afterEach(async () => {
 const validationDialog = () => document.body.querySelector<HTMLElement>('.form-alert-dialog');
 const pulsePressureDialog = () => document.body.querySelector<HTMLElement>('.pulse-pressure-dialog');
 
-it('labels the primary action as Registrar medición', async () => {
+it('labels the primary action as Guardar medición', async () => {
   await renderForm();
 
   expect(host.querySelector<HTMLButtonElement>('.btn-submit-reading')?.textContent).toContain(
-    'Registrar medición'
+    'Guardar medición'
   );
 });
 
