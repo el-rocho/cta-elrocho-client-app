@@ -670,7 +670,7 @@ export const translations = {
       armLeft: 'Left',
       armRight: 'Right',
       notesPlaceholder: 'Optional notes (e.g. after 15 min walk)...',
-      submit: 'Save measurement',
+      submit: 'Save reading',
       whiteCoatFilterActive: '5 min filter active',
       validationAlert: 'Enter Systolic, Diastolic, and Pulse',
       validationTitle: 'Missing values',
