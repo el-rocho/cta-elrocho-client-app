@@ -35,7 +35,7 @@ Permite configurar la dirección del servidor y ofrece la experiencia completa d
 - Inicio de sesión multiusuario y autenticación 2FA TOTP.
 - Sesión persistente mediante la cabecera `X-Session-Token`.
 - Registro de presión sistólica, presión diastólica, pulso, brazo y notas.
-- Referencias configurables: `ESC 2024`, `AHA/ACC 2025` e `ISH 2020`.
+- Referencias configurables: `Europea ESC 2024`, `USA AHA/ACC 2025` e `Int. ISH 2020`.
 - Objetivos terapéuticos orientativos y editables según la indicación profesional.
 - Historial, estadísticas y gráficas de evolución de hasta un año.
 - Filtro opcional de acomodación para agrupar tomas consecutivas y obtener un resultado efectivo por sesión.
@@ -77,7 +77,7 @@ Antes de actualizar, consulta [UPGRADING.md](UPGRADING.md) y las notas de la ver
 
 ### PWA
 
-La PWA puede instalarse desde el navegador y conectarse a servidores publicados mediante HTTPS con un certificado válido.
+La [PWA oficial del cliente](https://cliente.cta.elrocho.es/) puede instalarse desde el navegador y conectarse a servidores publicados mediante HTTPS con un certificado válido. Ese origen lo admite por omisión el servidor desde la versión `1.7.1`; si publicas tu propia copia en otro dominio, declara el suyo en `CORS_ORIGINS`.
 
 > [!WARNING]
 > La PWA oficial se sirve mediante HTTPS. Los navegadores bloquean su conexión a servidores locales `http://` por contenido mixto. Para un servidor HTTP de la red local, utiliza el APK Android.

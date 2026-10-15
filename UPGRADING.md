@@ -17,12 +17,17 @@ Desinstalar el cliente no borra SQLite, pero elimina esos datos locales y puede 
 1. Consulta la guía de actualización de la versión correspondiente del servidor.
 2. Haz una copia de su directorio persistente `data`.
 3. Lee las notas de la versión del cliente:
+   - [Actualización a 1.7.1](docs/actualizaciones/v1.7.1.md)
    - [Actualización a 1.7.0](docs/actualizaciones/v1.7.0.md)
    - [Actualización a 1.6.1](docs/actualizaciones/v1.6.1.md)
    - [Actualización a 1.6.0](docs/actualizaciones/v1.6.0.md)
    - [Versiones publicadas en GitHub](https://github.com/el-rocho/cta-elrocho-client-app/releases)
 
 ## Avisos especiales de instalación
+
+### Cliente Android 1.7.1
+
+El APK `v1.7.1` se instala **encima** de `1.7.0` sin desinstalar: la firma no ha cambiado. Si vienes de `1.6.0` o de una versión anterior, sigue primero el aviso de `1.6.1` que aparece más abajo.
 
 ### Cliente Android 1.7.0
 
