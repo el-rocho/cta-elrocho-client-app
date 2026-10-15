@@ -32,9 +32,13 @@ it('keeps the entered reading and does not show saved state when persistence rej
   ));
 
   const systolic = host.querySelector('#systolic-input') as HTMLInputElement;
+  const diastolic = host.querySelector('#diastolic-input') as HTMLInputElement;
+  const pulse = host.querySelector('#pulse-input') as HTMLInputElement;
   const notes = host.querySelector('.input-notes') as HTMLInputElement;
   await act(async () => {
     changeValue(systolic, '135');
+    changeValue(diastolic, '85');
+    changeValue(pulse, '70');
     changeValue(notes, 'keep me');
   });
   await act(async () => {

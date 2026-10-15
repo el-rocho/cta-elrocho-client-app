@@ -25,7 +25,13 @@ vi.mock('./services/authService', () => ({ getAuthStatus: vi.fn(), logout: vi.fn
 vi.mock('./services/serverConfigService', () => ({ getSavedServerUrl: vi.fn(() => 'https://server.test'), testServerConnection: vi.fn() }));
 vi.mock('./services/backupMergeService', () => ({ previewBackupMerge: vi.fn(), restoreBackupMerge: vi.fn(), restoreBackupReplace: vi.fn() }));
 vi.mock('./components/Header', () => ({ Header: ({ onOpenSettingsModal, onOpenExportModal }: any) => <><button onClick={onOpenSettingsModal}>open settings</button><button onClick={onOpenExportModal}>open export</button></> }));
-vi.mock('./components/ReadingForm', () => ({ ReadingForm: ({ onAddReading, readings }: any) => <><span data-testid="reading-count">{readings.length}</span><button onClick={() => onAddReading({ systolic: 130, diastolic: 80, heartRate: 70, arm: 'left' })}>add reading</button></> }));
+const readingFormProps = vi.hoisted(() => [] as Array<Record<string, unknown>>);
+vi.mock('./components/ReadingForm', () => ({
+  ReadingForm: (props: any) => {
+    readingFormProps.push(props);
+    return <><span data-testid="reading-count">{props.readings.length}</span><button onClick={() => props.onAddReading({ systolic: 130, diastolic: 80, heartRate: 70, arm: 'left' })}>add reading</button></>;
+  },
+}));
 vi.mock('./components/TrendChart', () => ({ TrendChart: () => null }));
 vi.mock('./components/TrendInsights', () => ({ TrendInsights: () => null }));
 vi.mock('./components/ReadingList', () => ({ ReadingList: () => null }));
@@ -137,6 +143,18 @@ describe('App storage error UX', () => {
     expect(host.querySelector('[data-testid="login-modal"]')).toBeNull();
     expect(host.textContent).not.toContain('Tus cambios no se han aplicado');
     expect(host.textContent).not.toContain('sesión ha caducado');
+  });
+
+  it('resets the reading form of the previous session when the session ends', async () => {
+    vi.mocked(storage.saveSettingsToServer).mockRejectedValue(new storage.StorageServiceError('unauthorized', 'save-settings', 401));
+    await renderApp();
+    const initialToken = readingFormProps.at(-1)?.sessionResetToken;
+    expect(typeof initialToken).toBe('number');
+
+    await click('open settings');
+    await click('save settings');
+
+    expect(readingFormProps.at(-1)?.sessionResetToken).not.toBe(initialToken);
   });
 
   it('shows a specific, actionable message when the server lacks the backup restore route (404 / outdated server)', async () => {

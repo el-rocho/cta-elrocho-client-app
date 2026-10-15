@@ -42,6 +42,7 @@ export function App() {
   const [isServerModalOpen, setIsServerModalOpen] = useState<boolean>(!getSavedServerUrl());
 
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [sessionResetToken, setSessionResetToken] = useState(0);
   const [hasAdmin, setHasAdmin] = useState<boolean>(true);
   const [authChecking, setAuthChecking] = useState<boolean>(true);
 
@@ -225,6 +226,13 @@ export function App() {
     await logout();
     setCurrentUser(null);
   };
+
+  // Cualquier cambio de usuario autenticado (acceso, cierre o invalidación de la
+  // sesión) reinicia los valores del formulario, que permanece montado y podría
+  // conservar los del usuario anterior.
+  useEffect(() => {
+    setSessionResetToken((token) => token + 1);
+  }, [currentUser?.id]);
 
   useEffect(() => {
     const showBackupReminderIfDue = () => {
@@ -567,6 +575,7 @@ export function App() {
           settings={settings}
           onUpdateInputMode={handleUpdateInputMode}
           readings={readings}
+          sessionResetToken={sessionResetToken}
         />
 
         <TrendChart
